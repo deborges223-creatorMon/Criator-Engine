@@ -120,17 +120,17 @@ export default function App() {
     bgPosX: 0,
     bgPosY: 0,
     bgZoom: 100,
-    slotTop: 32,
-    slotLeft: 30,
-    slotWidth: 40,
-    slotHeight: 40,
+    slotTop: 28,
+    slotLeft: 5,
+    slotWidth: 90,
+    slotHeight: 48,
     spinBottom: 4,
     spinLeft: 50,
     spinScale: 100,
     balanceTop: 3,
     balanceLeft: 3,
     betTop: 3,
-    betLeft: 65,
+    betLeft: 55,
     customSymbols: {},
     // Motor do Jogo
     numReels: 5,
@@ -283,11 +283,11 @@ export default function App() {
   }, [gameSettings.isAutoSpinning, gameState.isSpinning, gameState.balance]);
 
   return (
-    <div className="relative w-full h-screen h-[100dvh] bg-black font-sans text-white flex items-center justify-center overflow-hidden touch-none select-none p-0 sm:p-2">
+    <div className="relative w-full h-screen h-[100dvh] bg-[#020617] font-sans text-white flex items-center justify-center overflow-hidden touch-none select-none p-0 sm:py-2">
       
-      {/* Game Stage - Maintains 16:9 aspect ratio to align UI precisely with the background slot frame */}
+      {/* Game Stage - Focused 9:16 Mobile Aspect Ratio Frame */}
       <div 
-        className="relative w-full max-w-[1280px] max-h-[100dvh] aspect-video bg-[#050914] shadow-2xl overflow-hidden flex items-center justify-center transition-all duration-100"
+        className="relative w-full h-full max-h-[100dvh] aspect-[9/16] max-w-[460px] bg-[#050914] sm:rounded-3xl sm:border-[5px] sm:border-amber-500/25 shadow-[0_0_90px_rgba(0,0,0,0.95)] overflow-hidden flex items-center justify-center transition-all duration-100"
       >
         {/* Background Media Layer (Image or Infinite Loop Video) */}
         <BackgroundMedia 

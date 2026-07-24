@@ -1308,7 +1308,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                       onMouseMove={handleMouseMove}
                       onMouseUp={handleMouseUp}
                       onMouseLeave={handleMouseUp}
-                      className="relative w-full aspect-video rounded-2xl border-2 border-red-600/50 bg-black overflow-hidden select-none cursor-grab active:cursor-grabbing shadow-[0_0_30px_rgba(0,0,0,0.8)]"
+                      className="relative w-full aspect-[9/16] max-w-[340px] mx-auto rounded-2xl border-2 border-red-600/50 bg-black overflow-hidden select-none cursor-grab active:cursor-grabbing shadow-[0_0_30px_rgba(0,0,0,0.8)]"
                     >
                       {/* Live Background Media (Photo or Video) */}
                       <BackgroundMedia
