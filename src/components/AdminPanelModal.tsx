@@ -8,6 +8,7 @@ import { AdminConfig, GameState, SymbolType, Payline, BonusConfig, ReelPosition 
 import { SlotSymbol } from './SlotSymbol';
 import { SlotMachine } from './SlotMachine';
 import { BackgroundMedia } from './BackgroundMedia';
+import { SpinButton } from './SpinButton';
 
 interface AdminPanelModalProps {
   isOpen: boolean;
@@ -164,10 +165,10 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       bgPosX: 0,
       bgPosY: 0,
       bgZoom: 100,
-      slotTop: 32,
-      slotLeft: 30,
-      slotWidth: 40,
-      slotHeight: 40,
+      slotTop: 28,
+      slotLeft: 5,
+      slotWidth: 90,
+      slotHeight: 48,
       spinBottom: 4,
       spinLeft: 50,
       spinScale: 100,
@@ -178,7 +179,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       balanceTextColor: '#ffffff',
       balanceBorderColor: 'rgba(212, 175, 55, 0.4)',
       betTop: 3,
-      betLeft: 65,
+      betLeft: 55,
       betScale: 100,
       betBgColor: 'rgba(0, 0, 0, 0.7)',
       betTextColor: '#fde073',
@@ -273,8 +274,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       y: e.clientY,
       initialX: adminConfig.bgPosX || 0,
       initialY: adminConfig.bgPosY || 0,
-      initialWidth: adminConfig.slotWidth ?? 40,
-      initialHeight: adminConfig.slotHeight ?? 40,
+      initialWidth: adminConfig.slotWidth ?? 90,
+      initialHeight: adminConfig.slotHeight ?? 48,
     };
   };
 
@@ -284,10 +285,10 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     dragStartRef.current = {
       x: e.clientX,
       y: e.clientY,
-      initialX: adminConfig.slotLeft ?? 30,
-      initialY: adminConfig.slotTop ?? 32,
-      initialWidth: adminConfig.slotWidth ?? 40,
-      initialHeight: adminConfig.slotHeight ?? 40,
+      initialX: adminConfig.slotLeft ?? 5,
+      initialY: adminConfig.slotTop ?? 28,
+      initialWidth: adminConfig.slotWidth ?? 90,
+      initialHeight: adminConfig.slotHeight ?? 48,
     };
   };
 
@@ -297,10 +298,10 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     dragStartRef.current = {
       x: e.clientX,
       y: e.clientY,
-      initialX: adminConfig.slotLeft ?? 30,
-      initialY: adminConfig.slotTop ?? 32,
-      initialWidth: adminConfig.slotWidth ?? 40,
-      initialHeight: adminConfig.slotHeight ?? 40,
+      initialX: adminConfig.slotLeft ?? 5,
+      initialY: adminConfig.slotTop ?? 28,
+      initialWidth: adminConfig.slotWidth ?? 90,
+      initialHeight: adminConfig.slotHeight ?? 48,
     };
   };
 
@@ -336,7 +337,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     dragStartRef.current = {
       x: e.clientX,
       y: e.clientY,
-      initialX: adminConfig.betLeft ?? 65,
+      initialX: adminConfig.betLeft ?? 55,
       initialY: adminConfig.betTop ?? 3,
       initialWidth: 0,
       initialHeight: 0,
@@ -387,8 +388,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     } else if (isDraggingSlot) {
       const deltaX = ((e.clientX - dragStartRef.current.x) / rect.width) * 100;
       const deltaY = ((e.clientY - dragStartRef.current.y) / rect.height) * 100;
-      const newLeft = Math.max(0, Math.min(100 - (adminConfig.slotWidth ?? 40), Math.round(dragStartRef.current.initialX + deltaX)));
-      const newTop = Math.max(0, Math.min(100 - (adminConfig.slotHeight ?? 40), Math.round(dragStartRef.current.initialY + deltaY)));
+      const newLeft = Math.max(0, Math.min(100 - (adminConfig.slotWidth ?? 90), Math.round(dragStartRef.current.initialX + deltaX)));
+      const newTop = Math.max(0, Math.min(100 - (adminConfig.slotHeight ?? 48), Math.round(dragStartRef.current.initialY + deltaY)));
       onUpdateAdminConfig({ slotLeft: newLeft, slotTop: newTop });
     } else if (isResizingSlot) {
       const deltaX = ((e.clientX - dragStartRef.current.x) / rect.width) * 100;
@@ -1351,7 +1352,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                         onMouseDown={handleBetMouseDown}
                         style={{
                           top: `${adminConfig.betTop ?? 3}%`,
-                          left: `${adminConfig.betLeft ?? 65}%`,
+                          left: `${adminConfig.betLeft ?? 55}%`,
                           transform: `scale(${(adminConfig.betScale ?? 100) / 100})`,
                           transformOrigin: 'top left',
                           backgroundColor: adminConfig.betBgColor || 'rgba(0,0,0,0.8)',
@@ -1382,10 +1383,10 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                       <div
                         onMouseDown={handleSlotMouseDown}
                         style={{
-                          top: `${adminConfig.slotTop ?? 32}%`,
-                          left: `${adminConfig.slotLeft ?? 30}%`,
-                          width: `${adminConfig.slotWidth ?? 40}%`,
-                          height: `${adminConfig.slotHeight ?? 40}%`,
+                          top: `${adminConfig.slotTop ?? 28}%`,
+                          left: `${adminConfig.slotLeft ?? 5}%`,
+                          width: `${adminConfig.slotWidth ?? 90}%`,
+                          height: `${adminConfig.slotHeight ?? 48}%`,
                         }}
                         className="absolute border-2 border-dashed border-amber-400/80 bg-black/20 backdrop-blur-xs rounded-xl flex flex-col items-center justify-center cursor-move shadow-[0_0_20px_rgba(251,191,36,0.3)] hover:border-yellow-200 transition-colors z-20 group"
                       >
@@ -1454,11 +1455,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                         <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-red-600 text-white px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider shadow whitespace-nowrap pointer-events-none">
                           Botão Girar (Arraste)
                         </div>
-                        <div className="w-14 h-14 rounded-full bg-gradient-to-b from-amber-400 via-amber-600 to-amber-900 p-1 shadow-[0_0_20px_rgba(245,158,11,0.6)] border-2 border-yellow-200">
-                          <div className="w-full h-full rounded-full bg-gradient-to-b from-red-600 to-red-950 flex flex-col items-center justify-center text-white">
-                            <RefreshCw className="w-5 h-5 text-yellow-300" />
-                          </div>
-                        </div>
+                        <SpinButton onSpin={() => {}} isSpinning={testSpinning} />
                       </div>
 
                     </div>
