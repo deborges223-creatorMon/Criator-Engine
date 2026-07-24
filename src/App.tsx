@@ -5,6 +5,7 @@ import { SpinButton } from './components/SpinButton';
 import { GameMenuModal } from './components/GameMenuModal';
 import { AdminPanelModal } from './components/AdminPanelModal';
 import { BackgroundMedia } from './components/BackgroundMedia';
+import { WinCounterOverlay } from './components/WinCounterOverlay';
 import { GameState, SymbolType, AdminConfig, GameSettings, SpinHistoryItem, Payline, BonusConfig } from './types';
 
 const ALL_SYMBOLS: SymbolType[] = ['King', 'Queen', 'Crown', 'Lion', 'Sword', 'Shield', 'Castle', 'Diamond', 'Coin', 'Dragon'];
@@ -356,6 +357,15 @@ export default function App() {
             <Plus className="w-3 h-3" />
           </button>
         </div>
+
+        {/* Win Money Animated Counter Overlay */}
+        {gameState.win > 0 && (
+          <WinCounterOverlay 
+            winAmount={gameState.win} 
+            isBigWin={gameState.bigWin} 
+            onClose={() => setGameState(prev => ({ ...prev, win: 0 }))} 
+          />
+        )}
 
         {/* Top Right Quick Menu & Win Display */}
         <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-30 flex items-center gap-1.5 sm:gap-2 pointer-events-auto">

@@ -20,6 +20,7 @@ export interface Payline {
   positions: number[]; // row index for each reel (e.g. [1, 1, 1, 1, 1])
   payoutMultiplier: number; // e.g. 5.0
   color: string; // color for line rendering
+  strokeWidth?: number; // line thickness in px
   active: boolean;
 }
 

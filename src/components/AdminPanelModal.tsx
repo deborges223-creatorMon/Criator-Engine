@@ -979,14 +979,27 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                   <span className="text-xs text-amber-400 font-bold">x</span>
                                 </div>
 
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-1.5 bg-black/50 px-2 py-1 rounded-lg border border-white/10">
                                   <span className="text-[11px] text-gray-300 font-bold">Cor:</span>
                                   <input
                                     type="color"
-                                    value={activePayline.color}
+                                    value={activePayline.color || '#f59e0b'}
                                     onChange={(e) => handleUpdatePayline(activePayline.id, { color: e.target.value })}
                                     className="w-6 h-6 rounded cursor-pointer border border-gray-600 bg-transparent"
                                   />
+                                </div>
+
+                                <div className="flex items-center gap-1.5 bg-black/50 px-2.5 py-1 rounded-lg border border-white/10">
+                                  <span className="text-[11px] text-gray-300 font-bold">Espessura:</span>
+                                  <input
+                                    type="range"
+                                    min="2"
+                                    max="30"
+                                    value={activePayline.strokeWidth || 10}
+                                    onChange={(e) => handleUpdatePayline(activePayline.id, { strokeWidth: parseInt(e.target.value) })}
+                                    className="w-20 accent-amber-500 cursor-pointer"
+                                  />
+                                  <span className="text-xs font-mono font-bold text-amber-300 w-8">{activePayline.strokeWidth || 10}px</span>
                                 </div>
 
                                 <button
@@ -1468,7 +1481,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                       <div className="flex gap-2">
                         <input
                           type="text"
-                          placeholder="Cole a URL direta da imagem (.jpg, .png) ou vídeo (.mp4, .webm)..."
+                          placeholder="Cole link de Cloudinary, YouTube, Vimeo, MP4, WebM ou foto (.jpg, .png)..."
                           value={mediaUrlInput}
                           onChange={(e) => setMediaUrlInput(e.target.value)}
                           className="flex-1 px-2.5 py-1.5 bg-black/80 border border-white/10 rounded-lg text-xs text-white placeholder:text-gray-500 focus:outline-none focus:border-amber-400"
@@ -1489,12 +1502,13 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
                       {/* Presets buttons */}
                       <div className="space-y-1">
-                        <span className="text-[10px] text-gray-400 font-bold block">Fundos Pré-configurados:</span>
+                        <span className="text-[10px] text-gray-400 font-bold block">Fundos Pré-configurados (Imagens / Vídeos MP4 e YouTube):</span>
                         <div className="flex flex-wrap gap-1.5">
                           {[
-                            { label: 'Cassino Dourado (Padrão)', url: '/background.jpg' },
-                            { label: 'Vídeo Looping Cassino MP4', url: 'https://assets.mixkit.co/videos/preview/mixkit-poker-chips-and-cards-on-a-table-41103-large.mp4' },
-                            { label: 'Vídeo Luzes de Roleta', url: 'https://assets.mixkit.co/videos/preview/mixkit-roulette-wheel-spinning-close-up-41104-large.mp4' },
+                            { label: 'Cassino Dourado (Imagem Padrão)', url: '/background.jpg' },
+                            { label: 'Vídeo YouTube Cassino Lights', url: 'https://www.youtube.com/watch?v=5qap5aO4i9A' },
+                            { label: 'Vídeo MP4 Fogo & Luzes (Google CDN)', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' },
+                            { label: 'Vídeo MP4 Oceans HD', url: 'https://vjs.zencdn.net/v/oceans.mp4' },
                           ].map((preset, pIdx) => (
                             <button
                               key={pIdx}

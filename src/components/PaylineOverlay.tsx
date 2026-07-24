@@ -27,8 +27,8 @@ export const PaylineOverlay: React.FC<PaylineOverlayProps> = ({
         preserveAspectRatio="none"
       >
         <defs>
-          <filter id="glow-gold" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="8" result="blur" />
+          <filter id="glow-payline" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="6" result="blur" />
             <feMerge>
               <feMergeNode in="blur" />
               <feMergeNode in="SourceGraphic" />
@@ -39,6 +39,7 @@ export const PaylineOverlay: React.FC<PaylineOverlayProps> = ({
         {winningPaylines.map((winLine, index) => {
           const { payline, positions, matchCount } = winLine;
           const lineColor = payline.color || '#f59e0b';
+          const strokeWidth = payline.strokeWidth || 10;
 
           if (!positions || positions.length === 0) return null;
 
@@ -57,126 +58,128 @@ export const PaylineOverlay: React.FC<PaylineOverlayProps> = ({
 
           return (
             <g key={payline.id || index} className="transition-all duration-300">
-              {/* Outer Glow Path */}
+              {/* Outer Glow Path - Custom strokeWidth */}
               <motion.path
                 d={pathD}
                 fill="none"
                 stroke={lineColor}
-                strokeWidth="24"
+                strokeWidth={strokeWidth * 2.2}
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                opacity="0.6"
-                filter="url(#glow-gold)"
+                opacity="0.5"
+                filter="url(#glow-payline)"
                 initial={{ pathLength: 0, opacity: 0 }}
-                animate={{ pathLength: 1, opacity: 0.8 }}
-                transition={{ duration: 0.5, ease: 'easeOut' }}
+                animate={{ pathLength: 1, opacity: 0.6 }}
+                transition={{ duration: 0.4, ease: 'easeOut' }}
               />
 
-              {/* Core White/Yellow Bright Line */}
+              {/* Main Line - Custom strokeWidth */}
+              <motion.path
+                d={pathD}
+                fill="none"
+                stroke={lineColor}
+                strokeWidth={strokeWidth}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{ duration: 0.4, ease: 'easeOut' }}
+              />
+
+              {/* Inner Bright Core Dash Animation */}
               <motion.path
                 d={pathD}
                 fill="none"
                 stroke="#ffffff"
-                strokeWidth="10"
+                strokeWidth={Math.max(2, strokeWidth * 0.4)}
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeDasharray="20 10"
-                initial={{ pathLength: 0, strokeDashoffset: 0 }}
-                animate={{ 
-                  pathLength: 1, 
-                  strokeDashoffset: [-100, 0] 
-                }}
-                transition={{ 
-                  pathLength: { duration: 0.4 },
-                  strokeDashoffset: { duration: 1.5, repeat: Infinity, ease: 'linear' } 
-                }}
+                strokeDasharray="15 10"
+                initial={{ strokeDashoffset: 0 }}
+                animate={{ strokeDashoffset: [-100, 0] }}
+                transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
               />
 
-              {/* Secondary Colored Accent Line */}
-              <motion.path
-                d={pathD}
-                fill="none"
-                stroke={lineColor}
-                strokeWidth="6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-
-              {/* Glowing Node Circles at Each Winning Position */}
+              {/* Glowing Connection Dots at Winning Symbol Centers */}
               {points.map((pt, pIdx) => (
                 <g key={pIdx}>
-                  {/* Outer Ripple */}
+                  {/* Subtle outer pulse circle */}
                   <motion.circle
                     cx={pt.x}
                     cy={pt.y}
-                    r="28"
+                    r={strokeWidth * 2}
                     fill={lineColor}
-                    opacity="0.5"
-                    animate={{ scale: [0.8, 1.4, 0.8], opacity: [0.7, 0.2, 0.7] }}
+                    opacity="0.3"
+                    animate={{ scale: [0.8, 1.3, 0.8], opacity: [0.4, 0.1, 0.4] }}
                     transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut', delay: pIdx * 0.1 }}
                   />
-                  {/* Middle Glow */}
+                  {/* Core Dot */}
                   <circle
                     cx={pt.x}
                     cy={pt.y}
-                    r="20"
+                    r={Math.max(4, strokeWidth * 0.7)}
                     fill={lineColor}
                     stroke="#ffffff"
-                    strokeWidth="4"
-                    className="drop-shadow-[0_0_12px_rgba(255,255,255,0.9)]"
-                  />
-                  {/* Core White Dot */}
-                  <circle
-                    cx={pt.x}
-                    cy={pt.y}
-                    r="8"
-                    fill="#ffffff"
+                    strokeWidth="2"
                   />
                 </g>
               ))}
 
-              {/* Start Badge Marker */}
-              <g transform={`translate(${firstPoint.x}, ${firstPoint.y - 45})`}>
+              {/* Clean Line Indicator Badge positioned cleanly at LEFT Margin (Outside Symbols Grid) */}
+              <g transform={`translate(-25, ${firstPoint.y})`}>
                 <rect
-                  x="-65"
-                  y="-18"
-                  width="130"
-                  height="36"
-                  rx="18"
+                  x="-35"
+                  y="-14"
+                  width="70"
+                  height="28"
+                  rx="14"
                   fill="#000000"
                   stroke={lineColor}
-                  strokeWidth="3"
-                  className="drop-shadow-[0_0_15px_rgba(245,158,11,0.9)]"
+                  strokeWidth="2"
+                  className="drop-shadow-[0_0_10px_rgba(0,0,0,0.8)]"
                 />
                 <text
                   x="0"
-                  y="5"
+                  y="4"
                   textAnchor="middle"
-                  fill="#fef08a"
-                  fontSize="16"
+                  fill="#ffffff"
+                  fontSize="12"
                   fontWeight="900"
-                  letterSpacing="0.5"
                 >
-                  {payline.name ? payline.name.split(' ')[0] : `LINHA ${payline.id}`} ({matchCount}x)
+                  L{payline.id}
                 </text>
               </g>
+
+              {/* Clean Line Indicator Badge positioned cleanly at RIGHT Margin (Outside Symbols Grid) */}
+              {lastPoint && (
+                <g transform={`translate(1025, ${lastPoint.y})`}>
+                  <rect
+                    x="-35"
+                    y="-14"
+                    width="70"
+                    height="28"
+                    rx="14"
+                    fill="#000000"
+                    stroke={lineColor}
+                    strokeWidth="2"
+                    className="drop-shadow-[0_0_10px_rgba(0,0,0,0.8)]"
+                  />
+                  <text
+                    x="0"
+                    y="4"
+                    textAnchor="middle"
+                    fill="#fde047"
+                    fontSize="11"
+                    fontWeight="900"
+                  >
+                    {matchCount}x
+                  </text>
+                </g>
+              )}
             </g>
           );
         })}
       </svg>
-
-      {/* Floating Victory Tag Banner */}
-      <div className="absolute top-2 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none z-40">
-        <motion.div 
-          initial={{ scale: 0.5, opacity: 0, y: -10 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-amber-600 via-yellow-400 to-amber-600 text-black px-4 py-1 rounded-full font-black text-xs sm:text-sm tracking-wider shadow-[0_0_25px_rgba(250,204,21,0.9)] border-2 border-white uppercase flex items-center gap-1.5"
-        >
-          <span>✨</span>
-          <span>LINHA DE GANHO COMBINADA!</span>
-          <span>✨</span>
-        </motion.div>
-      </div>
     </div>
   );
 };
