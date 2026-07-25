@@ -295,68 +295,78 @@ export default function App() {
           posX={adminConfig.bgPosX}
           posY={adminConfig.bgPosY}
           zoom={adminConfig.bgZoom}
+          fit={adminConfig.bgFit}
+          anchor={adminConfig.bgAnchor}
         />
 
         {/* Balance Widget - Positioned according to Admin Configuration */}
-        <div 
-          style={{
-            top: `${adminConfig.balanceTop ?? 3}%`,
-            left: `${adminConfig.balanceLeft ?? 3}%`,
-            transform: `scale(${(adminConfig.balanceScale ?? 100) / 100})`,
-            transformOrigin: 'top left',
-            backgroundColor: adminConfig.balanceBgColor || 'rgba(0, 0, 0, 0.7)',
-            borderColor: adminConfig.balanceBorderColor || 'rgba(212, 175, 55, 0.4)',
-          }}
-          className="absolute z-30 flex items-center gap-1.5 sm:gap-3 backdrop-blur-md px-2.5 py-1 sm:px-4 sm:py-2 rounded-xl border shadow-lg transition-all duration-100"
-        >
-          <Coins className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-yellow-400 shrink-0" />
-          <div className="flex flex-col">
-            <span className="text-[9px] sm:text-[10px] text-yellow-500 font-bold uppercase tracking-wider">Saldo</span>
-            <span 
-              style={{ color: adminConfig.balanceTextColor || '#ffffff' }}
-              className="text-xs sm:text-base font-extrabold"
-            >
-              R$ {gameState.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </span>
+        {adminConfig.balanceVisible !== false && (
+          <div 
+            style={{
+              top: `${adminConfig.balanceTop ?? 3}%`,
+              left: `${adminConfig.balanceLeft ?? 3}%`,
+              transform: `scale(${(adminConfig.balanceScale ?? 100) / 100}) rotate(${adminConfig.balanceRotation || 0}deg)`,
+              transformOrigin: 'top left',
+              opacity: (adminConfig.balanceOpacity ?? 100) / 100,
+              zIndex: adminConfig.balanceZIndex ?? 30,
+              backgroundColor: adminConfig.balanceBgColor || 'rgba(0, 0, 0, 0.7)',
+              borderColor: adminConfig.balanceBorderColor || 'rgba(212, 175, 55, 0.4)',
+            }}
+            className="absolute flex items-center gap-1.5 sm:gap-3 backdrop-blur-md px-2.5 py-1 sm:px-4 sm:py-2 rounded-xl border shadow-lg transition-all duration-100"
+          >
+            <Coins className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-yellow-400 shrink-0" />
+            <div className="flex flex-col">
+              <span className="text-[9px] sm:text-[10px] text-yellow-500 font-bold uppercase tracking-wider">Saldo</span>
+              <span 
+                style={{ color: adminConfig.balanceTextColor || '#ffffff' }}
+                className="text-xs sm:text-base font-extrabold"
+              >
+                R$ {gameState.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </span>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Bet Controller - Positioned according to Admin Configuration */}
-        <div 
-          style={{
-            top: `${adminConfig.betTop ?? 3}%`,
-            left: `${adminConfig.betLeft ?? 65}%`,
-            transform: `scale(${(adminConfig.betScale ?? 100) / 100})`,
-            transformOrigin: 'top left',
-            backgroundColor: adminConfig.betBgColor || 'rgba(0, 0, 0, 0.7)',
-            borderColor: adminConfig.betBorderColor || 'rgba(139, 105, 20, 0.4)',
-          }}
-          className="absolute z-30 flex items-center backdrop-blur-md px-2 py-1 rounded-xl border gap-1 sm:gap-2 transition-all duration-100"
-        >
-          <button 
-            onClick={() => handleBetChange(-5)}
-            disabled={gameState.isSpinning}
-            className="w-5 h-5 sm:w-7 sm:h-7 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center text-white disabled:opacity-50 cursor-pointer"
+        {adminConfig.betVisible !== false && (
+          <div 
+            style={{
+              top: `${adminConfig.betTop ?? 3}%`,
+              left: `${adminConfig.betLeft ?? 55}%`,
+              transform: `scale(${(adminConfig.betScale ?? 100) / 100}) rotate(${adminConfig.betRotation || 0}deg)`,
+              transformOrigin: 'top left',
+              opacity: (adminConfig.betOpacity ?? 100) / 100,
+              zIndex: adminConfig.betZIndex ?? 30,
+              backgroundColor: adminConfig.betBgColor || 'rgba(0, 0, 0, 0.7)',
+              borderColor: adminConfig.betBorderColor || 'rgba(139, 105, 20, 0.4)',
+            }}
+            className="absolute flex items-center backdrop-blur-md px-2 py-1 rounded-xl border gap-1 sm:gap-2 transition-all duration-100"
           >
-            <Minus className="w-3 h-3" />
-          </button>
-          <div className="flex flex-col items-center px-1">
-            <span className="text-[8px] sm:text-[9px] text-gray-400 uppercase font-bold">Aposta</span>
-            <span 
-              style={{ color: adminConfig.betTextColor || '#fde073' }}
-              className="text-xs sm:text-sm font-bold"
+            <button 
+              onClick={() => handleBetChange(-5)}
+              disabled={gameState.isSpinning}
+              className="w-5 h-5 sm:w-7 sm:h-7 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center text-white disabled:opacity-50 cursor-pointer"
             >
-              R$ {gameState.bet.toFixed(2)}
-            </span>
+              <Minus className="w-3 h-3" />
+            </button>
+            <div className="flex flex-col items-center px-1">
+              <span className="text-[8px] sm:text-[9px] text-gray-400 uppercase font-bold">Aposta</span>
+              <span 
+                style={{ color: adminConfig.betTextColor || '#fde073' }}
+                className="text-xs sm:text-sm font-bold"
+              >
+                R$ {gameState.bet.toFixed(2)}
+              </span>
+            </div>
+            <button 
+              onClick={() => handleBetChange(5)}
+              disabled={gameState.isSpinning}
+              className="w-5 h-5 sm:w-7 sm:h-7 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center text-white disabled:opacity-50 cursor-pointer"
+            >
+              <Plus className="w-3 h-3" />
+            </button>
           </div>
-          <button 
-            onClick={() => handleBetChange(5)}
-            disabled={gameState.isSpinning}
-            className="w-5 h-5 sm:w-7 sm:h-7 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center text-white disabled:opacity-50 cursor-pointer"
-          >
-            <Plus className="w-3 h-3" />
-          </button>
-        </div>
+        )}
 
         {/* Win Money Animated Counter Overlay */}
         {gameState.win > 0 && (
@@ -399,41 +409,53 @@ export default function App() {
         </div>
 
         {/* Slot Machine Area - Positioned according to Admin Configuration */}
-        <div 
-          style={{
-            top: `${adminConfig.slotTop ?? 32}%`,
-            left: `${adminConfig.slotLeft ?? 30}%`,
-            width: `${adminConfig.slotWidth ?? 40}%`,
-            height: `${adminConfig.slotHeight ?? 40}%`,
-          }}
-          className="absolute flex items-center justify-center z-10 transition-all duration-100"
-        >
-          <SlotMachine 
-            isSpinning={gameState.isSpinning} 
-            grid={grid} 
-            customSymbols={adminConfig.customSymbols}
-            customSymbolConfigs={adminConfig.customSymbolConfigs}
-            showReelBorders={adminConfig.showReelBorders}
-            showReelBg={adminConfig.showReelBg}
-            individualReelPositions={adminConfig.individualReelPositions}
-            spinStyle={adminConfig.spinStyle}
-            paylines={adminConfig.paylines}
-            numReels={adminConfig.numReels}
-            numRows={adminConfig.numRows}
-          />
-        </div>
+        {adminConfig.slotVisible !== false && (
+          <div 
+            style={{
+              top: `${adminConfig.slotTop ?? 28}%`,
+              left: `${adminConfig.slotLeft ?? 5}%`,
+              width: `${adminConfig.slotWidth ?? 90}%`,
+              height: `${adminConfig.slotHeight ?? 48}%`,
+              transform: `rotate(${adminConfig.slotRotation || 0}deg)`,
+              transformOrigin: 'center center',
+              opacity: (adminConfig.slotOpacity ?? 100) / 100,
+              zIndex: adminConfig.slotZIndex ?? 10,
+            }}
+            className="absolute flex items-center justify-center transition-all duration-100"
+          >
+            <SlotMachine 
+              isSpinning={gameState.isSpinning} 
+              grid={grid} 
+              customSymbols={adminConfig.customSymbols}
+              customSymbolConfigs={adminConfig.customSymbolConfigs}
+              showReelBorders={adminConfig.showReelBorders}
+              showReelBg={adminConfig.showReelBg}
+              individualReelPositions={adminConfig.individualReelPositions}
+              spinStyle={adminConfig.spinStyle}
+              paylines={adminConfig.paylines}
+              numReels={adminConfig.numReels}
+              numRows={adminConfig.numRows}
+            />
+          </div>
+        )}
         
         {/* Spin Button Area - Positioned according to Admin Configuration */}
-        <div 
-          style={{
-            bottom: `${adminConfig.spinBottom ?? 4}%`,
-            left: `${adminConfig.spinLeft ?? 50}%`,
-            transform: `translateX(-50%) scale(${(adminConfig.spinScale ?? 100) / 100})`,
-          }}
-          className="absolute z-20 transition-all duration-100"
-        >
-          <SpinButton onSpin={handleSpin} isSpinning={gameState.isSpinning} />
-        </div>
+        {adminConfig.spinVisible !== false && (
+          <div 
+            style={{
+              bottom: adminConfig.spinTop === undefined ? `${adminConfig.spinBottom ?? 4}%` : undefined,
+              top: adminConfig.spinTop !== undefined ? `${adminConfig.spinTop}%` : undefined,
+              left: `${adminConfig.spinLeft ?? 50}%`,
+              transform: `translateX(-50%) scale(${(adminConfig.spinScale ?? 100) / 100}) rotate(${adminConfig.spinRotation || 0}deg)`,
+              transformOrigin: 'center center',
+              opacity: (adminConfig.spinOpacity ?? 100) / 100,
+              zIndex: adminConfig.spinZIndex ?? 20,
+            }}
+            className="absolute transition-all duration-100"
+          >
+            <SpinButton onSpin={handleSpin} isSpinning={gameState.isSpinning} />
+          </div>
+        )}
 
       </div>
 

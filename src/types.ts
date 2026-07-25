@@ -55,34 +55,63 @@ export interface AdminConfig {
   bgImage: string;
   bgPosX: number; // X offset in % (-100 to 100)
   bgPosY: number; // Y offset in % (-100 to 100)
-  bgZoom: number; // Zoom level (100 to 200%)
+  bgZoom: number; // Zoom level (100 to 300%)
+  bgFit?: 'cover' | 'contain' | 'stretch';
+  bgAnchor?: 'center' | 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
-  // Slot Reel Box Frame Position over background (%)
-  slotTop: number; // default 32
-  slotLeft: number; // default 30
-  slotWidth: number; // default 40
-  slotHeight: number; // default 40
+  // Slot Reel Box Frame Position & Engine Properties
+  slotTop: number; // default 28
+  slotLeft: number; // default 5
+  slotWidth: number; // default 90
+  slotHeight: number; // default 48
+  slotRotation?: number; // degrees -180 to 180
+  slotOpacity?: number; // 0 to 100
+  slotZIndex?: number; // 0 to 50
+  slotLocked?: boolean;
+  slotVisible?: boolean;
 
-  // Spin Button Positioning (%)
+  // Spin Button Positioning & Engine Properties
   spinBottom: number; // default 4
   spinLeft: number; // default 50
+  spinTop?: number;
   spinScale: number; // default 100 (%)
+  spinRotation?: number;
+  spinOpacity?: number;
+  spinZIndex?: number;
+  spinLocked?: boolean;
+  spinVisible?: boolean;
 
-  // Balance Box Customization
+  // Balance Box Customization & Engine Properties
   balanceTop?: number; // default 3
   balanceLeft?: number; // default 3
   balanceScale?: number; // default 100
+  balanceRotation?: number;
+  balanceOpacity?: number;
+  balanceZIndex?: number;
+  balanceLocked?: boolean;
+  balanceVisible?: boolean;
   balanceBgColor?: string; // default "#000000b3"
   balanceTextColor?: string; // default "#ffffff"
   balanceBorderColor?: string; // default "#d4af3766"
 
-  // Bet Box Customization
+  // Bet Box Customization & Engine Properties
   betTop?: number; // default 3
-  betLeft?: number; // default 65
+  betLeft?: number; // default 55
   betScale?: number; // default 100
+  betRotation?: number;
+  betOpacity?: number;
+  betZIndex?: number;
+  betLocked?: boolean;
+  betVisible?: boolean;
   betBgColor?: string; // default "#000000b3"
   betTextColor?: string; // default "#fde073"
   betBorderColor?: string; // default "#8b691466"
+
+  // Editor Helpers (Game Engine Mode)
+  gridEnabled?: boolean;
+  gridSize?: number; // 1, 2, 5, 10 (%)
+  snapToGrid?: boolean;
+  editorZoom?: number; // 50% to 150%
 
   // Reel Frame & Border options
   showReelBorders?: boolean; // default false

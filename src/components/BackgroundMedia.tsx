@@ -59,6 +59,10 @@ interface BackgroundMediaProps {
   bgPosY?: number;
   zoom?: number;
   bgZoom?: number;
+  fit?: 'cover' | 'contain' | 'stretch';
+  bgFit?: 'cover' | 'contain' | 'stretch';
+  anchor?: 'center' | 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+  bgAnchor?: 'center' | 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
   className?: string;
 }
 
@@ -71,12 +75,18 @@ export const BackgroundMedia: React.FC<BackgroundMediaProps> = ({
   bgPosY,
   zoom,
   bgZoom,
+  fit,
+  bgFit,
+  anchor,
+  bgAnchor,
   className = '',
 }) => {
   const bgUrl = src || bgImage || '/background.jpg';
   const finalX = posX ?? bgPosX ?? 0;
   const finalY = posY ?? bgPosY ?? 0;
   const finalZoom = zoom ?? bgZoom ?? 100;
+  const finalFit = fit || bgFit || 'cover';
+  const finalAnchor = anchor || bgAnchor || 'center';
 
   const [hasError, setHasError] = useState<boolean>(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -85,9 +95,36 @@ export const BackgroundMedia: React.FC<BackgroundMediaProps> = ({
   const vimeoId = getVimeoId(bgUrl);
   const isVideo = isVideoUrl(bgUrl);
 
+  // Translate anchor to CSS position/origin
+  const anchorPositionMap: Record<string, string> = {
+    'center': 'center center',
+    'top': 'center top',
+    'bottom': 'center bottom',
+    'left': 'left center',
+    'right': 'right center',
+    'top-left': 'left top',
+    'top-right': 'right top',
+    'bottom-left': 'left bottom',
+    'bottom-right': 'right bottom',
+  };
+
+  const cssPosition = anchorPositionMap[finalAnchor] || 'center center';
+
+  // Translate fit to object-fit / background-size
+  let objectFitClass = 'object-cover';
+  let bgSizeCss = 'cover';
+
+  if (finalFit === 'contain') {
+    objectFitClass = 'object-contain';
+    bgSizeCss = 'contain';
+  } else if (finalFit === 'stretch') {
+    objectFitClass = 'object-fill';
+    bgSizeCss = '100% 100%';
+  }
+
   const style: React.CSSProperties = {
     transform: `translate(${finalX}%, ${finalY}%) scale(${finalZoom / 100})`,
-    transformOrigin: 'center center',
+    transformOrigin: cssPosition,
   };
 
   useEffect(() => {
@@ -110,7 +147,7 @@ export const BackgroundMedia: React.FC<BackgroundMediaProps> = ({
         <iframe
           src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&loop=1&playlist=${youtubeId}&controls=0&showinfo=0&autohide=1&modestbranding=1&rel=0&enablejsapi=1`}
           title="Background Video YouTube"
-          className="w-[150%] h-[150%] -top-[25%] -left-[25%] absolute object-cover border-0"
+          className={`w-[150%] h-[150%] -top-[25%] -left-[25%] absolute border-0 ${objectFitClass}`}
           allow="autoplay; encrypted-media"
         />
       </div>
@@ -124,7 +161,7 @@ export const BackgroundMedia: React.FC<BackgroundMediaProps> = ({
         <iframe
           src={`https://player.vimeo.com/video/${vimeoId}?background=1&autoplay=1&loop=1&byline=0&title=0&muted=1`}
           title="Background Video Vimeo"
-          className="w-[150%] h-[150%] -top-[25%] -left-[25%] absolute object-cover border-0"
+          className={`w-[150%] h-[150%] -top-[25%] -left-[25%] absolute border-0 ${objectFitClass}`}
           allow="autoplay; encrypted-media"
         />
       </div>
@@ -147,8 +184,11 @@ export const BackgroundMedia: React.FC<BackgroundMediaProps> = ({
             console.error('Failed to load video source:', bgUrl);
             setHasError(true);
           }}
-          className={`absolute inset-0 w-full h-full object-cover pointer-events-none transition-transform duration-75 ${className}`}
-          style={style}
+          className={`absolute inset-0 w-full h-full pointer-events-none transition-transform duration-75 ${objectFitClass} ${className}`}
+          style={{
+            ...style,
+            objectPosition: cssPosition,
+          }}
         />
       </div>
     );
@@ -158,15 +198,17 @@ export const BackgroundMedia: React.FC<BackgroundMediaProps> = ({
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
       <div
-        className={`absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none transition-transform duration-75 ${className}`}
+        className={`absolute inset-0 bg-no-repeat pointer-events-none transition-transform duration-75 ${className}`}
         style={{
           ...style,
           backgroundImage: `url("${bgUrl}")`,
+          backgroundSize: bgSizeCss,
+          backgroundPosition: cssPosition,
         }}
       />
       {hasError && (
         <div className="absolute bottom-2 left-2 bg-red-950/90 text-red-200 border border-red-500 text-[10px] px-2 py-1 rounded shadow z-50">
-          ⚠️ Não foi possível reproduzir este vídeo. Verifique se o link é direto (.mp4/.webm) ou do YouTube.
+          ⚠️ Não foi possível reproduzir este vídeo. Verifique se o link é válido.
         </div>
       )}
     </div>

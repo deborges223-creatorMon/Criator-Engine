@@ -2,7 +2,8 @@ import React, { useState, useRef } from 'react';
 import { 
   Shield, X, DollarSign, Activity, Percent, Flame, RefreshCw, Key, 
   AlertTriangle, Image as ImageIcon, Move, LayoutGrid, Upload, Trash2, 
-  RotateCcw, Sliders, Eye, Coins, Minus, Plus, Cpu, Layers, Gift, FileText, Check, PlusCircle, Settings, Palette, Play
+  RotateCcw, Sliders, Eye, Coins, Minus, Plus, Cpu, Layers, Gift, FileText, Check, PlusCircle, Settings, Palette, Play,
+  Lock, Unlock, Grid, Maximize2, EyeOff, Crosshair
 } from 'lucide-react';
 import { AdminConfig, GameState, SymbolType, Payline, BonusConfig, ReelPosition } from '../types';
 import { SlotSymbol } from './SlotSymbol';
@@ -49,6 +50,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const [customBalanceInput, setCustomBalanceInput] = useState<string>('');
   const [pinError, setPinError] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'metrics' | 'engine' | 'layout' | 'symbols'>('engine');
+  const [selectedElement, setSelectedElement] = useState<'slot' | 'spin' | 'balance' | 'bet' | 'bg'>('slot');
   const [testSpinning, setTestSpinning] = useState<boolean>(false);
   const [mediaUrlInput, setMediaUrlInput] = useState<string>('');
   
@@ -158,6 +160,13 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     onUpdateAdminConfig({ customSymbols: updatedSymbols, customSymbolConfigs: updatedConfigs });
   };
 
+  // Snap coordinate helper according to engine grid settings
+  const snapCoord = (val: number) => {
+    if (!adminConfig.snapToGrid) return val;
+    const step = adminConfig.gridSize || 2;
+    return Math.round(val / step) * step;
+  };
+
   // Reset layout positioning and styles
   const handleResetLayout = () => {
     onUpdateAdminConfig({
@@ -165,28 +174,60 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       bgPosX: 0,
       bgPosY: 0,
       bgZoom: 100,
+      bgFit: 'cover',
+      bgAnchor: 'center',
+
       slotTop: 28,
       slotLeft: 5,
       slotWidth: 90,
       slotHeight: 48,
+      slotRotation: 0,
+      slotOpacity: 100,
+      slotZIndex: 10,
+      slotLocked: false,
+      slotVisible: true,
+
       spinBottom: 4,
       spinLeft: 50,
+      spinTop: undefined,
       spinScale: 100,
+      spinRotation: 0,
+      spinOpacity: 100,
+      spinZIndex: 20,
+      spinLocked: false,
+      spinVisible: true,
+
       balanceTop: 3,
       balanceLeft: 3,
       balanceScale: 100,
+      balanceRotation: 0,
+      balanceOpacity: 100,
+      balanceZIndex: 30,
+      balanceLocked: false,
+      balanceVisible: true,
       balanceBgColor: 'rgba(0, 0, 0, 0.7)',
       balanceTextColor: '#ffffff',
       balanceBorderColor: 'rgba(212, 175, 55, 0.4)',
+
       betTop: 3,
       betLeft: 55,
       betScale: 100,
+      betRotation: 0,
+      betOpacity: 100,
+      betZIndex: 30,
+      betLocked: false,
+      betVisible: true,
       betBgColor: 'rgba(0, 0, 0, 0.7)',
       betTextColor: '#fde073',
       betBorderColor: 'rgba(139, 105, 20, 0.4)',
+
       showReelBorders: false,
       showReelBg: false,
       individualReelPositions: {},
+      gridEnabled: true,
+      gridSize: 2,
+      snapToGrid: true,
+      editorZoom: 100,
     });
   };
 
@@ -268,6 +309,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   // Mouse Down Handlers
   const handleBgMouseDown = (e: React.MouseEvent) => {
     if (isDraggingSlot || isResizingSlot || isDraggingSpin || isDraggingBalance || isDraggingBet || draggingReelIndex !== null) return;
+    setSelectedElement('bg');
     setIsDraggingBg(true);
     dragStartRef.current = {
       x: e.clientX,
@@ -281,6 +323,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
   const handleSlotMouseDown = (e: React.MouseEvent) => {
     e.stopPropagation();
+    setSelectedElement('slot');
+    if (adminConfig.slotLocked) return;
     setIsDraggingSlot(true);
     dragStartRef.current = {
       x: e.clientX,
@@ -294,6 +338,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
   const handleSlotResizeMouseDown = (e: React.MouseEvent) => {
     e.stopPropagation();
+    setSelectedElement('slot');
+    if (adminConfig.slotLocked) return;
     setIsResizingSlot(true);
     dragStartRef.current = {
       x: e.clientX,
@@ -307,6 +353,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
   const handleSpinMouseDown = (e: React.MouseEvent) => {
     e.stopPropagation();
+    setSelectedElement('spin');
+    if (adminConfig.spinLocked) return;
     setIsDraggingSpin(true);
     dragStartRef.current = {
       x: e.clientX,
@@ -320,6 +368,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
   const handleBalanceMouseDown = (e: React.MouseEvent) => {
     e.stopPropagation();
+    setSelectedElement('balance');
+    if (adminConfig.balanceLocked) return;
     setIsDraggingBalance(true);
     dragStartRef.current = {
       x: e.clientX,
@@ -333,6 +383,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
   const handleBetMouseDown = (e: React.MouseEvent) => {
     e.stopPropagation();
+    setSelectedElement('bet');
+    if (adminConfig.betLocked) return;
     setIsDraggingBet(true);
     dragStartRef.current = {
       x: e.clientX,
@@ -346,6 +398,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
   const handleReelMouseDown = (reelIdx: number, e: React.MouseEvent) => {
     e.stopPropagation();
+    setSelectedElement('slot');
     setDraggingReelIndex(reelIdx);
     const current = adminConfig.individualReelPositions?.[reelIdx] || { offsetX: 0, offsetY: 0, scale: 100 };
     dragStartRef.current = {
@@ -382,38 +435,38 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     if (isDraggingBg) {
       const deltaX = ((e.clientX - dragStartRef.current.x) / rect.width) * 100;
       const deltaY = ((e.clientY - dragStartRef.current.y) / rect.height) * 100;
-      const newX = Math.max(-100, Math.min(100, Math.round(dragStartRef.current.initialX + deltaX)));
-      const newY = Math.max(-100, Math.min(100, Math.round(dragStartRef.current.initialY + deltaY)));
+      const newX = snapCoord(Math.max(-100, Math.min(100, Math.round(dragStartRef.current.initialX + deltaX))));
+      const newY = snapCoord(Math.max(-100, Math.min(100, Math.round(dragStartRef.current.initialY + deltaY))));
       onUpdateAdminConfig({ bgPosX: newX, bgPosY: newY });
-    } else if (isDraggingSlot) {
+    } else if (isDraggingSlot && !adminConfig.slotLocked) {
       const deltaX = ((e.clientX - dragStartRef.current.x) / rect.width) * 100;
       const deltaY = ((e.clientY - dragStartRef.current.y) / rect.height) * 100;
-      const newLeft = Math.max(0, Math.min(100 - (adminConfig.slotWidth ?? 90), Math.round(dragStartRef.current.initialX + deltaX)));
-      const newTop = Math.max(0, Math.min(100 - (adminConfig.slotHeight ?? 48), Math.round(dragStartRef.current.initialY + deltaY)));
+      const newLeft = snapCoord(Math.max(0, Math.min(100 - (adminConfig.slotWidth ?? 90), Math.round(dragStartRef.current.initialX + deltaX))));
+      const newTop = snapCoord(Math.max(0, Math.min(100 - (adminConfig.slotHeight ?? 48), Math.round(dragStartRef.current.initialY + deltaY))));
       onUpdateAdminConfig({ slotLeft: newLeft, slotTop: newTop });
-    } else if (isResizingSlot) {
+    } else if (isResizingSlot && !adminConfig.slotLocked) {
       const deltaX = ((e.clientX - dragStartRef.current.x) / rect.width) * 100;
       const deltaY = ((e.clientY - dragStartRef.current.y) / rect.height) * 100;
-      const newWidth = Math.max(15, Math.min(90, Math.round(dragStartRef.current.initialWidth + deltaX)));
-      const newHeight = Math.max(15, Math.min(90, Math.round(dragStartRef.current.initialHeight + deltaY)));
+      const newWidth = snapCoord(Math.max(15, Math.min(95, Math.round(dragStartRef.current.initialWidth + deltaX))));
+      const newHeight = snapCoord(Math.max(15, Math.min(95, Math.round(dragStartRef.current.initialHeight + deltaY))));
       onUpdateAdminConfig({ slotWidth: newWidth, slotHeight: newHeight });
-    } else if (isDraggingSpin) {
+    } else if (isDraggingSpin && !adminConfig.spinLocked) {
       const deltaX = ((e.clientX - dragStartRef.current.x) / rect.width) * 100;
       const deltaY = ((dragStartRef.current.y - e.clientY) / rect.height) * 100;
-      const newLeft = Math.max(10, Math.min(90, Math.round(dragStartRef.current.initialX + deltaX)));
-      const newBottom = Math.max(0, Math.min(80, Math.round(dragStartRef.current.initialY + deltaY)));
+      const newLeft = snapCoord(Math.max(10, Math.min(90, Math.round(dragStartRef.current.initialX + deltaX))));
+      const newBottom = snapCoord(Math.max(0, Math.min(80, Math.round(dragStartRef.current.initialY + deltaY))));
       onUpdateAdminConfig({ spinLeft: newLeft, spinBottom: newBottom });
-    } else if (isDraggingBalance) {
+    } else if (isDraggingBalance && !adminConfig.balanceLocked) {
       const deltaX = ((e.clientX - dragStartRef.current.x) / rect.width) * 100;
       const deltaY = ((e.clientY - dragStartRef.current.y) / rect.height) * 100;
-      const newLeft = Math.max(0, Math.min(80, Math.round(dragStartRef.current.initialX + deltaX)));
-      const newTop = Math.max(0, Math.min(85, Math.round(dragStartRef.current.initialY + deltaY)));
+      const newLeft = snapCoord(Math.max(0, Math.min(80, Math.round(dragStartRef.current.initialX + deltaX))));
+      const newTop = snapCoord(Math.max(0, Math.min(85, Math.round(dragStartRef.current.initialY + deltaY))));
       onUpdateAdminConfig({ balanceLeft: newLeft, balanceTop: newTop });
-    } else if (isDraggingBet) {
+    } else if (isDraggingBet && !adminConfig.betLocked) {
       const deltaX = ((e.clientX - dragStartRef.current.x) / rect.width) * 100;
       const deltaY = ((e.clientY - dragStartRef.current.y) / rect.height) * 100;
-      const newLeft = Math.max(0, Math.min(80, Math.round(dragStartRef.current.initialX + deltaX)));
-      const newTop = Math.max(0, Math.min(85, Math.round(dragStartRef.current.initialY + deltaY)));
+      const newLeft = snapCoord(Math.max(0, Math.min(80, Math.round(dragStartRef.current.initialX + deltaX))));
+      const newTop = snapCoord(Math.max(0, Math.min(85, Math.round(dragStartRef.current.initialY + deltaY))));
       onUpdateAdminConfig({ betLeft: newLeft, betTop: newTop });
     }
   };
@@ -1259,596 +1312,1249 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                 </div>
               )}
 
-              {/* TAB 3: LAYOUT & BACKGROUND CUSTOMIZATION */}
+              {/* TAB 3: GAME ENGINE LAYOUT & STAGE INSPECTOR */}
               {activeTab === 'layout' && (
                 <div className="space-y-4">
-                  {/* VISUAL DRAG & DROP CANVAS */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-bold text-red-300 uppercase tracking-widest flex items-center gap-1.5">
-                        <Move className="w-4 h-4 text-red-400" />
-                        Editor Visual do Layout (Arraste Direto na Tela)
-                      </h3>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (testSpinning) return;
-                            setTestSpinning(true);
-                            setTimeout(() => setTestSpinning(false), 1200);
-                          }}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow ${
-                            testSpinning 
-                              ? 'bg-amber-500 text-black animate-pulse' 
-                              : 'bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-black font-extrabold'
-                          }`}
-                        >
-                          <Play className="w-3.5 h-3.5 fill-black" />
-                          <span>{testSpinning ? 'Girando...' : 'Testar Rolagem'}</span>
-                        </button>
-
-                        <button
-                          onClick={handleResetLayout}
-                          className="px-2.5 py-1.5 bg-black/60 border border-red-800/40 hover:bg-red-950/60 rounded-lg text-xs font-bold text-gray-300 flex items-center gap-1 transition cursor-pointer"
-                        >
-                          <RotateCcw className="w-3.5 h-3.5 text-red-400" />
-                          <span>Restaurar</span>
-                        </button>
+                  {/* Top Engine Control Bar */}
+                  <div className="p-3 bg-black/60 rounded-xl border border-amber-500/30 flex flex-wrap items-center justify-between gap-3 shadow-lg">
+                    <div className="flex items-center gap-2">
+                      <Cpu className="w-5 h-5 text-amber-400 animate-pulse" />
+                      <div>
+                        <h3 className="text-xs font-black text-amber-300 uppercase tracking-widest flex items-center gap-1.5">
+                          Inspetor de Layout (Engine Mobile 9:16)
+                        </h3>
+                        <p className="text-[10px] text-gray-400">
+                          Edição em tempo real com precisão de pixel. Selecione e arraste na tela ou use os controles numéricos.
+                        </p>
                       </div>
                     </div>
 
-                    <p className="text-[11px] text-gray-400">
-                      Clique e arraste diretamente no quadro abaixo para mover a imagem/vídeo de fundo, a moldura dos slots, as colunas individuais, o saldo, aposta e botão girar.
-                    </p>
-
-                    {/* Canvas Stage */}
-                    <div
-                      ref={previewCanvasRef}
-                      onMouseDown={handleBgMouseDown}
-                      onMouseMove={handleMouseMove}
-                      onMouseUp={handleMouseUp}
-                      onMouseLeave={handleMouseUp}
-                      className="relative w-full aspect-[9/16] max-w-[340px] mx-auto rounded-2xl border-2 border-red-600/50 bg-black overflow-hidden select-none cursor-grab active:cursor-grabbing shadow-[0_0_30px_rgba(0,0,0,0.8)]"
-                    >
-                      {/* Live Background Media (Photo or Video) */}
-                      <BackgroundMedia
-                        src={adminConfig.bgImage}
-                        posX={adminConfig.bgPosX}
-                        posY={adminConfig.bgPosY}
-                        zoom={adminConfig.bgZoom}
-                      />
-
-                      {/* Canvas Grid Overlay */}
-                      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none" />
-
-                      {/* Interactive Draggable Balance Widget */}
-                      <div
-                        onMouseDown={handleBalanceMouseDown}
-                        style={{
-                          top: `${adminConfig.balanceTop ?? 3}%`,
-                          left: `${adminConfig.balanceLeft ?? 3}%`,
-                          transform: `scale(${(adminConfig.balanceScale ?? 100) / 100})`,
-                          transformOrigin: 'top left',
-                          backgroundColor: adminConfig.balanceBgColor || 'rgba(0,0,0,0.8)',
-                          borderColor: adminConfig.balanceBorderColor || 'rgba(212,175,55,0.6)',
-                        }}
-                        className="absolute z-30 cursor-move backdrop-blur-md px-2.5 py-1 rounded-xl border-2 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-[0_0_15px_rgba(212,175,55,0.4)] hover:scale-105 transition-transform"
+                    {/* Engine Toolbar Controls */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      {/* Grid Toggle */}
+                      <button
+                        type="button"
+                        onClick={() => onUpdateAdminConfig({ gridEnabled: !adminConfig.gridEnabled })}
+                        className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 border transition cursor-pointer ${
+                          adminConfig.gridEnabled
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+                            : 'bg-black/40 text-gray-400 border-white/10'
+                        }`}
                       >
-                        <Coins className="w-3.5 h-3.5 text-yellow-400" />
-                        <div className="flex flex-col">
-                          <span className="text-[8px] text-gray-400 uppercase font-bold">Saldo (Arraste)</span>
-                          <span 
-                            style={{ color: adminConfig.balanceTextColor || '#ffffff' }}
-                            className="text-xs font-black whitespace-nowrap"
+                        <Grid className="w-3.5 h-3.5" />
+                        <span>Gradil ({adminConfig.gridEnabled ? 'ON' : 'OFF'})</span>
+                      </button>
+
+                      {/* Snap to Grid Toggle */}
+                      <button
+                        type="button"
+                        onClick={() => onUpdateAdminConfig({ snapToGrid: !adminConfig.snapToGrid })}
+                        className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 border transition cursor-pointer ${
+                          adminConfig.snapToGrid
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
+                            : 'bg-black/40 text-gray-400 border-white/10'
+                        }`}
+                      >
+                        <Crosshair className="w-3.5 h-3.5" />
+                        <span>Snap Alinhamento ({adminConfig.snapToGrid ? 'Ativo' : 'Livre'})</span>
+                      </button>
+
+                      {/* Grid Size Step Selector */}
+                      <div className="flex items-center gap-1 bg-black/80 px-2 py-1 rounded-lg border border-white/10">
+                        <span className="text-[10px] text-gray-400 font-bold">Passo:</span>
+                        {[1, 2, 5, 10].map(step => (
+                          <button
+                            key={step}
+                            type="button"
+                            onClick={() => onUpdateAdminConfig({ gridSize: step })}
+                            className={`px-1.5 py-0.5 rounded text-[10px] font-black font-mono transition cursor-pointer ${
+                              (adminConfig.gridSize || 2) === step
+                                ? 'bg-amber-400 text-black'
+                                : 'text-gray-400 hover:text-white'
+                            }`}
                           >
-                            R$ {gameState.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </span>
-                        </div>
+                            {step}%
+                          </button>
+                        ))}
                       </div>
 
-                      {/* Interactive Draggable Bet Controller Widget */}
-                      <div
-                        onMouseDown={handleBetMouseDown}
-                        style={{
-                          top: `${adminConfig.betTop ?? 3}%`,
-                          left: `${adminConfig.betLeft ?? 55}%`,
-                          transform: `scale(${(adminConfig.betScale ?? 100) / 100})`,
-                          transformOrigin: 'top left',
-                          backgroundColor: adminConfig.betBgColor || 'rgba(0,0,0,0.8)',
-                          borderColor: adminConfig.betBorderColor || 'rgba(139,105,20,0.6)',
+                      {/* Spin Test Button */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTestSpinning(true);
+                          setTimeout(() => setTestSpinning(false), 2000);
                         }}
-                        className="absolute z-30 cursor-move backdrop-blur-md px-2 py-1 rounded-xl border-2 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-[0_0_15px_rgba(245,158,11,0.4)] hover:scale-105 transition-transform"
+                        className="px-3 py-1.5 bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 rounded-lg text-xs font-extrabold text-white flex items-center gap-1.5 shadow cursor-pointer"
                       >
-                        <div className="flex items-center gap-1">
-                          <div className="w-4 h-4 rounded bg-white/10 flex items-center justify-center text-white">
-                            <Minus className="w-2.5 h-2.5" />
-                          </div>
-                          <div className="flex flex-col items-center px-1">
-                            <span className="text-[8px] text-amber-400 uppercase font-black tracking-wider">Aposta (Arraste)</span>
-                            <span 
-                              style={{ color: adminConfig.betTextColor || '#fde073' }}
-                              className="text-xs font-black whitespace-nowrap"
-                            >
-                              R$ {gameState.bet.toFixed(2)}
-                            </span>
-                          </div>
-                          <div className="w-4 h-4 rounded bg-white/10 flex items-center justify-center text-white">
-                            <Plus className="w-2.5 h-2.5" />
-                          </div>
-                        </div>
-                      </div>
+                        <Play className="w-3.5 h-3.5" />
+                        <span>Testar Giro</span>
+                      </button>
 
-                      {/* Interactive Draggable & Resizable Slot Box Frame */}
-                      <div
-                        onMouseDown={handleSlotMouseDown}
-                        style={{
-                          top: `${adminConfig.slotTop ?? 28}%`,
-                          left: `${adminConfig.slotLeft ?? 5}%`,
-                          width: `${adminConfig.slotWidth ?? 90}%`,
-                          height: `${adminConfig.slotHeight ?? 48}%`,
-                        }}
-                        className="absolute border-2 border-dashed border-amber-400/80 bg-black/20 backdrop-blur-xs rounded-xl flex flex-col items-center justify-center cursor-move shadow-[0_0_20px_rgba(251,191,36,0.3)] hover:border-yellow-200 transition-colors z-20 group"
+                      {/* Reset Layout */}
+                      <button
+                        type="button"
+                        onClick={handleResetLayout}
+                        className="px-2.5 py-1.5 bg-black/60 border border-red-800/40 hover:bg-red-950/60 rounded-lg text-xs font-bold text-gray-300 flex items-center gap-1 transition cursor-pointer"
+                        title="Restaurar Posicionamento Padrão"
                       >
-                        <div className="absolute -top-6 bg-amber-400 text-black px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider shadow pointer-events-none z-30 whitespace-nowrap">
-                          Área dos Slots (Mover/Redimensionar)
-                        </div>
-
-                        {/* Individual Reel Column Drag Badges */}
-                        <div className="absolute top-1 left-0 right-0 z-40 flex justify-around px-1 pointer-events-auto">
-                          {Array.from({ length: numReels }).map((_, rIdx) => (
-                            <button
-                              key={rIdx}
-                              onMouseDown={(e) => handleReelMouseDown(rIdx, e)}
-                              className="px-1.5 py-0.5 rounded bg-amber-500 hover:bg-yellow-300 text-black text-[9px] font-black shadow border border-black cursor-grab active:cursor-grabbing"
-                              title={`Arraste o Slot R${rIdx + 1} individualmente`}
-                            >
-                              R{rIdx + 1}
-                            </button>
-                          ))}
-                        </div>
-
-                        {/* Real SlotMachine rendered inside preview */}
-                        <div className="w-full h-full pointer-events-none flex items-center justify-center p-1">
-                          <SlotMachine 
-                            isSpinning={testSpinning} 
-                            grid={[
-                              ['Castle', 'Sword', 'Diamond', 'Crown', 'Lion'],
-                              ['Shield', 'Queen', 'Dragon', 'King', 'Coin'],
-                              ['Lion', 'Diamond', 'Castle', 'Sword', 'Crown'],
-                              ['Dragon', 'Castle', 'Shield', 'Queen', 'King'],
-                              ['Sword', 'Coin', 'Lion', 'Diamond', 'Crown'],
-                              ['Crown', 'Dragon', 'King', 'Shield', 'Castle'],
-                            ].slice(0, numReels).map(col => col.slice(0, numRows))} 
-                            customSymbols={adminConfig.customSymbols}
-                            customSymbolConfigs={adminConfig.customSymbolConfigs}
-                            showReelBorders={adminConfig.showReelBorders}
-                            showReelBg={adminConfig.showReelBg}
-                            individualReelPositions={adminConfig.individualReelPositions}
-                            spinStyle={adminConfig.spinStyle}
-                            paylines={adminConfig.paylines}
-                            numReels={numReels}
-                            numRows={numRows}
-                          />
-                        </div>
-
-                        {/* Bottom-Right Resize Handle */}
-                        <div
-                          onMouseDown={handleSlotResizeMouseDown}
-                          className="absolute -bottom-2 -right-2 w-5 h-5 bg-amber-400 hover:bg-yellow-200 border border-black rounded-full cursor-se-resize shadow-lg flex items-center justify-center z-30"
-                          title="Arraste para Redimensionar o Slot"
-                        >
-                          <div className="w-2 h-2 border-r-2 border-b-2 border-black" />
-                        </div>
-                      </div>
-
-                      {/* Interactive Draggable Spin Button Widget */}
-                      <div
-                        onMouseDown={handleSpinMouseDown}
-                        style={{
-                          bottom: `${adminConfig.spinBottom ?? 4}%`,
-                          left: `${adminConfig.spinLeft ?? 50}%`,
-                          transform: `translateX(-50%) scale(${(adminConfig.spinScale ?? 100) / 100})`,
-                        }}
-                        className="absolute z-30 cursor-move group hover:scale-105 transition-transform"
-                      >
-                        <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-red-600 text-white px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider shadow whitespace-nowrap pointer-events-none">
-                          Botão Girar (Arraste)
-                        </div>
-                        <SpinButton onSpin={() => {}} isSpinning={testSpinning} />
-                      </div>
-
+                        <RotateCcw className="w-3.5 h-3.5 text-red-400" />
+                        <span>Reset</span>
+                      </button>
                     </div>
                   </div>
 
-                  {/* SLIDERS FOR FINE TUNING */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                    {/* Panel 1: Imagem ou Vídeo de Fundo */}
-                    <div className="space-y-3 bg-black/30 p-3 rounded-lg border border-white/5 sm:col-span-2">
-                      <div className="text-xs font-bold text-red-300 uppercase tracking-wider border-b border-white/10 pb-1.5 flex items-center justify-between">
-                        <span>1. Foto ou Vídeo de Fundo</span>
-                        <label className="text-[10px] text-amber-400 hover:underline cursor-pointer flex items-center gap-1 font-bold bg-amber-500/10 px-2 py-1 rounded border border-amber-500/30">
-                          <Upload className="w-3 h-3 text-amber-400" />
-                          <span>Fazer Upload (Foto / Vídeo)</span>
-                          <input type="file" accept="image/*,video/*" onChange={handleBgFileUpload} className="hidden" />
-                        </label>
+                  {/* Main Inspector Grid Layout: Left Canvas Stage Preview, Right Numeric Inspector */}
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+                    
+                    {/* LEFT COLUMN: 100% Faithful 9:16 Canvas Stage Preview */}
+                    <div className="lg:col-span-5 flex flex-col items-center space-y-2">
+                      <div className="text-xs font-bold text-gray-300 flex items-center justify-between w-full max-w-[340px] px-1">
+                        <span className="flex items-center gap-1">
+                          <Maximize2 className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Tela do Jogo (Modo 9:16 Mobile)</span>
+                        </span>
+                        <span className="text-[10px] text-amber-400 font-mono">100% Fidelidade Real</span>
                       </div>
 
-                      {/* Direct URL Input for Image or Video */}
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          placeholder="Cole link de Cloudinary, YouTube, Vimeo, MP4, WebM ou foto (.jpg, .png)..."
-                          value={mediaUrlInput}
-                          onChange={(e) => setMediaUrlInput(e.target.value)}
-                          className="flex-1 px-2.5 py-1.5 bg-black/80 border border-white/10 rounded-lg text-xs text-white placeholder:text-gray-500 focus:outline-none focus:border-amber-400"
+                      {/* 9:16 Mobile Canvas Container */}
+                      <div
+                        ref={previewCanvasRef}
+                        onMouseDown={handleBgMouseDown}
+                        onMouseMove={handleMouseMove}
+                        onMouseUp={handleMouseUp}
+                        onMouseLeave={handleMouseUp}
+                        className={`relative w-full aspect-[9/16] max-w-[340px] mx-auto rounded-2xl bg-black overflow-hidden select-none shadow-[0_0_35px_rgba(0,0,0,0.9)] border-2 transition-all ${
+                          selectedElement === 'bg' ? 'border-amber-400 ring-2 ring-amber-400/40' : 'border-amber-500/40'
+                        }`}
+                      >
+                        {/* Live Background Media (Photo or Video with Fit & Anchor support) */}
+                        <BackgroundMedia
+                          src={adminConfig.bgImage}
+                          posX={adminConfig.bgPosX}
+                          posY={adminConfig.bgPosY}
+                          zoom={adminConfig.bgZoom}
+                          fit={adminConfig.bgFit}
+                          anchor={adminConfig.bgAnchor}
                         />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (mediaUrlInput.trim()) {
-                              onUpdateAdminConfig({ bgImage: mediaUrlInput.trim() });
-                              setMediaUrlInput('');
-                            }
-                          }}
-                          className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 rounded-lg text-xs font-extrabold text-black transition cursor-pointer"
-                        >
-                          Aplicar URL
-                        </button>
-                      </div>
 
-                      {/* Presets buttons */}
-                      <div className="space-y-1">
-                        <span className="text-[10px] text-gray-400 font-bold block">Fundos Pré-configurados (Imagens / Vídeos MP4 e YouTube):</span>
-                        <div className="flex flex-wrap gap-1.5">
-                          {[
-                            { label: 'Cassino Dourado (Imagem Padrão)', url: '/background.jpg' },
-                            { label: 'Vídeo YouTube Cassino Lights', url: 'https://www.youtube.com/watch?v=5qap5aO4i9A' },
-                            { label: 'Vídeo MP4 Fogo & Luzes (Google CDN)', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' },
-                            { label: 'Vídeo MP4 Oceans HD', url: 'https://vjs.zencdn.net/v/oceans.mp4' },
-                          ].map((preset, pIdx) => (
-                            <button
-                              key={pIdx}
-                              type="button"
-                              onClick={() => onUpdateAdminConfig({ bgImage: preset.url })}
-                              className={`px-2 py-1 rounded text-[10px] font-bold border transition cursor-pointer ${
-                                adminConfig.bgImage === preset.url
-                                  ? 'bg-amber-500 text-black border-amber-300 font-black'
-                                  : 'bg-black/60 border-white/10 text-gray-300 hover:border-amber-400/50'
-                              }`}
-                            >
-                              {preset.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-3 pt-2 border-t border-white/10">
-                        <div className="space-y-1">
-                          <div className="flex justify-between text-[11px] text-gray-300">
-                            <span>Posição X:</span>
-                            <span className="font-mono text-yellow-300">{adminConfig.bgPosX || 0}%</span>
-                          </div>
-                          <input
-                            type="range"
-                            min="-50"
-                            max="50"
-                            value={adminConfig.bgPosX || 0}
-                            onChange={(e) => onUpdateAdminConfig({ bgPosX: parseInt(e.target.value) })}
-                            className="w-full accent-yellow-500 cursor-pointer"
+                        {/* Grid Pattern Overlay */}
+                        {adminConfig.gridEnabled && (
+                          <div 
+                            className="absolute inset-0 pointer-events-none z-10 opacity-30" 
+                            style={{
+                              backgroundImage: `linear-gradient(to right, rgba(255, 255, 255, 0.25) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.25) 1px, transparent 1px)`,
+                              backgroundSize: `${adminConfig.gridSize || 2}% ${adminConfig.gridSize || 2}%`
+                            }}
                           />
-                        </div>
+                        )}
 
-                        <div className="space-y-1">
-                          <div className="flex justify-between text-[11px] text-gray-300">
-                            <span>Posição Y:</span>
-                            <span className="font-mono text-yellow-300">{adminConfig.bgPosY || 0}%</span>
-                          </div>
-                          <input
-                            type="range"
-                            min="-50"
-                            max="50"
-                            value={adminConfig.bgPosY || 0}
-                            onChange={(e) => onUpdateAdminConfig({ bgPosY: parseInt(e.target.value) })}
-                            className="w-full accent-yellow-500 cursor-pointer"
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <div className="flex justify-between text-[11px] text-gray-300">
-                            <span>Zoom Fundo:</span>
-                            <span className="font-mono text-yellow-300">{adminConfig.bgZoom || 100}%</span>
-                          </div>
-                          <input
-                            type="range"
-                            min="100"
-                            max="200"
-                            value={adminConfig.bgZoom || 100}
-                            onChange={(e) => onUpdateAdminConfig({ bgZoom: parseInt(e.target.value) })}
-                            className="w-full accent-yellow-500 cursor-pointer"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Panel 2: Bloco de Saldo */}
-                    <div className="space-y-3 bg-black/30 p-3 rounded-lg border border-white/5">
-                      <div className="text-xs font-bold text-yellow-300 uppercase tracking-wider border-b border-white/10 pb-1.5">
-                        2. Bloco de Saldo
-                      </div>
-
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-[11px] text-gray-300">
-                          <span>Escala / Tamanho:</span>
-                          <span className="font-mono text-yellow-300">{adminConfig.balanceScale ?? 100}%</span>
-                        </div>
-                        <input
-                          type="range"
-                          min="50"
-                          max="180"
-                          value={adminConfig.balanceScale ?? 100}
-                          onChange={(e) => onUpdateAdminConfig({ balanceScale: parseInt(e.target.value) })}
-                          className="w-full accent-yellow-400 cursor-pointer"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-2 pt-1">
-                        <div className="space-y-1">
-                          <label className="text-[10px] text-gray-400 block truncate">Cor Fundo</label>
-                          <input 
-                            type="color" 
-                            value={adminConfig.balanceBgColor && adminConfig.balanceBgColor.startsWith('#') ? adminConfig.balanceBgColor : '#000000'}
-                            onChange={(e) => onUpdateAdminConfig({ balanceBgColor: e.target.value })}
-                            className="w-full h-7 rounded bg-transparent border border-gray-600 cursor-pointer"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[10px] text-gray-400 block truncate">Cor Texto</label>
-                          <input 
-                            type="color" 
-                            value={adminConfig.balanceTextColor && adminConfig.balanceTextColor.startsWith('#') ? adminConfig.balanceTextColor : '#ffffff'}
-                            onChange={(e) => onUpdateAdminConfig({ balanceTextColor: e.target.value })}
-                            className="w-full h-7 rounded bg-transparent border border-gray-600 cursor-pointer"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[10px] text-gray-400 block truncate">Cor Borda</label>
-                          <input 
-                            type="color" 
-                            value={adminConfig.balanceBorderColor && adminConfig.balanceBorderColor.startsWith('#') ? adminConfig.balanceBorderColor : '#d4af37'}
-                            onChange={(e) => onUpdateAdminConfig({ balanceBorderColor: e.target.value })}
-                            className="w-full h-7 rounded bg-transparent border border-gray-600 cursor-pointer"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Panel 3: Bloco de Aposta */}
-                    <div className="space-y-3 bg-black/30 p-3 rounded-lg border border-white/5">
-                      <div className="text-xs font-bold text-amber-400 uppercase tracking-wider border-b border-white/10 pb-1.5">
-                        3. Bloco de Aposta
-                      </div>
-
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-[11px] text-gray-300">
-                          <span>Escala / Tamanho:</span>
-                          <span className="font-mono text-amber-300">{adminConfig.betScale ?? 100}%</span>
-                        </div>
-                        <input
-                          type="range"
-                          min="50"
-                          max="180"
-                          value={adminConfig.betScale ?? 100}
-                          onChange={(e) => onUpdateAdminConfig({ betScale: parseInt(e.target.value) })}
-                          className="w-full accent-amber-500 cursor-pointer"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-2 pt-1">
-                        <div className="space-y-1">
-                          <label className="text-[10px] text-gray-400 block truncate">Cor Fundo</label>
-                          <input 
-                            type="color" 
-                            value={adminConfig.betBgColor && adminConfig.betBgColor.startsWith('#') ? adminConfig.betBgColor : '#000000'}
-                            onChange={(e) => onUpdateAdminConfig({ betBgColor: e.target.value })}
-                            className="w-full h-7 rounded bg-transparent border border-gray-600 cursor-pointer"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[10px] text-gray-400 block truncate">Cor Texto</label>
-                          <input 
-                            type="color" 
-                            value={adminConfig.betTextColor && adminConfig.betTextColor.startsWith('#') ? adminConfig.betTextColor : '#fde073'}
-                            onChange={(e) => onUpdateAdminConfig({ betTextColor: e.target.value })}
-                            className="w-full h-7 rounded bg-transparent border border-gray-600 cursor-pointer"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[10px] text-gray-400 block truncate">Cor Borda</label>
-                          <input 
-                            type="color" 
-                            value={adminConfig.betBorderColor && adminConfig.betBorderColor.startsWith('#') ? adminConfig.betBorderColor : '#8b6914'}
-                            onChange={(e) => onUpdateAdminConfig({ betBorderColor: e.target.value })}
-                            className="w-full h-7 rounded bg-transparent border border-gray-600 cursor-pointer"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Panel 4: Estilo dos Slots, Moldura & Animação de Rolagem */}
-                    <div className="space-y-3 bg-black/30 p-3 rounded-lg border border-white/5 sm:col-span-2">
-                      <div className="text-xs font-bold text-red-400 uppercase tracking-wider border-b border-white/10 pb-1.5 flex items-center justify-between">
-                        <span>4. Estilo de Animação & Rolagem dos Slots</span>
-                        <span className="text-[10px] text-amber-300 font-mono">3 Modos de Giro</span>
-                      </div>
-
-                      {/* 3 Slot Spin Types Selector */}
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
-                        {[
-                          {
-                            id: 'smooth',
-                            title: '1. Padrão Suave',
-                            badge: 'Smooth',
-                            desc: 'Movimento contínuo e fluido com parada suave em mola.',
-                          },
-                          {
-                            id: 'turbo',
-                            title: '2. Turbo Rápido',
-                            badge: 'Hyper Fast',
-                            desc: 'Giro em altíssima velocidade com efeito Blur e trava instantânea.',
-                          },
-                          {
-                            id: 'cascade',
-                            title: '3. Cascata em Queda',
-                            badge: 'Gravity Drop',
-                            desc: 'Efeito de gravidade com símbolos caindo do topo e quicando no slot.',
-                          },
-                        ].map((spinOpt) => {
-                          const isSelected = (adminConfig.spinStyle || 'smooth') === spinOpt.id;
-
-                          return (
-                            <button
-                              key={spinOpt.id}
-                              type="button"
-                              onClick={() => onUpdateAdminConfig({ spinStyle: spinOpt.id as any })}
-                              className={`p-3 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between space-y-2 ${
-                                isSelected
-                                  ? 'bg-gradient-to-br from-amber-900/90 to-amber-950/90 border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.3)]'
-                                  : 'bg-black/60 border-white/10 hover:border-amber-500/50 hover:bg-white/5'
-                              }`}
-                            >
-                              <div className="flex items-center justify-between">
-                                <span className={`text-xs font-extrabold ${isSelected ? 'text-amber-300' : 'text-white'}`}>
-                                  {spinOpt.title}
-                                </span>
-                                <span className={`text-[9px] px-1.5 py-0.5 rounded font-black uppercase ${
-                                  isSelected ? 'bg-amber-400 text-black' : 'bg-white/10 text-gray-400'
-                                }`}>
-                                  {spinOpt.badge}
-                                </span>
-                              </div>
-                              <p className="text-[10px] text-gray-300 leading-tight">
-                                {spinOpt.desc}
-                              </p>
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-white/10 items-center">
-                        <label className="flex items-center gap-2 cursor-pointer text-xs text-gray-200 hover:text-white">
-                          <input 
-                            type="checkbox"
-                            checked={!!adminConfig.showReelBorders}
-                            onChange={(e) => onUpdateAdminConfig({ showReelBorders: e.target.checked })}
-                            className="w-4 h-4 rounded accent-red-500"
-                          />
-                          <span>Exibir Bordas nos Lots</span>
-                        </label>
-
-                        <label className="flex items-center gap-2 cursor-pointer text-xs text-gray-200 hover:text-white">
-                          <input 
-                            type="checkbox"
-                            checked={!!adminConfig.showReelBg}
-                            onChange={(e) => onUpdateAdminConfig({ showReelBg: e.target.checked })}
-                            className="w-4 h-4 rounded accent-red-500"
-                          />
-                          <span>Exibir Fundo Escuro nos Lots</span>
-                        </label>
-
-                        <div className="space-y-1">
-                          <div className="flex justify-between text-[11px] text-gray-300">
-                            <span>Escala Botão Girar:</span>
-                            <span className="font-mono text-red-300">{adminConfig.spinScale ?? 100}%</span>
-                          </div>
-                          <input
-                            type="range"
-                            min="50"
-                            max="180"
-                            value={adminConfig.spinScale ?? 100}
-                            onChange={(e) => onUpdateAdminConfig({ spinScale: parseInt(e.target.value) })}
-                            className="w-full accent-red-500 cursor-pointer"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Panel 5: Individual Reel Fine Tuning */}
-                  <div className="p-3.5 bg-black/40 rounded-xl border border-amber-500/30 space-y-3">
-                    <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                      <span className="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
-                        <Sliders className="w-4 h-4 text-amber-400" />
-                        Ajuste Fino por Coluna de Slot (Reel Individual)
-                      </span>
-                      <span className="text-[10px] text-gray-400">
-                        Ajuste X, Y e Escala individual de cada coluna de rolo
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      {Array.from({ length: numReels }).map((_, rIdx) => {
-                        const pos = adminConfig.individualReelPositions?.[rIdx] || { offsetX: 0, offsetY: 0, scale: 100 };
-
-                        return (
-                          <div key={rIdx} className="p-2.5 bg-black/60 rounded-lg border border-white/10 space-y-2">
-                            <div className="flex justify-between items-center text-xs">
-                              <span className="font-extrabold text-amber-400">Coluna R{rIdx + 1}:</span>
-                              <span className="text-[10px] text-gray-400 font-mono">
-                                ({pos.offsetX || 0}px, {pos.offsetY || 0}px)
+                        {/* Balance Box Element */}
+                        {adminConfig.balanceVisible !== false && (
+                          <div
+                            onMouseDown={handleBalanceMouseDown}
+                            style={{
+                              top: `${adminConfig.balanceTop ?? 3}%`,
+                              left: `${adminConfig.balanceLeft ?? 3}%`,
+                              transform: `scale(${(adminConfig.balanceScale ?? 100) / 100}) rotate(${adminConfig.balanceRotation || 0}deg)`,
+                              transformOrigin: 'top left',
+                              opacity: (adminConfig.balanceOpacity ?? 100) / 100,
+                              zIndex: adminConfig.balanceZIndex ?? 30,
+                              backgroundColor: adminConfig.balanceBgColor || 'rgba(0,0,0,0.8)',
+                              borderColor: adminConfig.balanceBorderColor || 'rgba(212,175,55,0.6)',
+                            }}
+                            className={`absolute cursor-move backdrop-blur-md px-2.5 py-1 rounded-xl border-2 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-lg transition-shadow ${
+                              selectedElement === 'balance' ? 'ring-2 ring-yellow-400 border-yellow-300 shadow-[0_0_20px_rgba(250,204,21,0.8)]' : ''
+                            }`}
+                          >
+                            <Coins className="w-3.5 h-3.5 text-yellow-400" />
+                            <div className="flex flex-col">
+                              <span className="text-[8px] text-gray-300 uppercase font-bold flex items-center justify-between gap-1">
+                                <span>Saldo</span>
+                                {selectedElement === 'balance' && <span className="text-yellow-300 font-mono text-[7px]">(X:{adminConfig.balanceLeft}%, Y:{adminConfig.balanceTop}%)</span>}
+                              </span>
+                              <span 
+                                style={{ color: adminConfig.balanceTextColor || '#ffffff' }}
+                                className="text-xs font-black whitespace-nowrap"
+                              >
+                                R$ {gameState.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                               </span>
                             </div>
+                          </div>
+                        )}
 
-                            <div className="space-y-1">
-                              <div className="flex justify-between text-[10px] text-gray-300">
-                                <span>Offset X:</span>
-                                <span>{pos.offsetX || 0}px</span>
+                        {/* Bet Box Element */}
+                        {adminConfig.betVisible !== false && (
+                          <div
+                            onMouseDown={handleBetMouseDown}
+                            style={{
+                              top: `${adminConfig.betTop ?? 3}%`,
+                              left: `${adminConfig.betLeft ?? 55}%`,
+                              transform: `scale(${(adminConfig.betScale ?? 100) / 100}) rotate(${adminConfig.betRotation || 0}deg)`,
+                              transformOrigin: 'top left',
+                              opacity: (adminConfig.betOpacity ?? 100) / 100,
+                              zIndex: adminConfig.betZIndex ?? 30,
+                              backgroundColor: adminConfig.betBgColor || 'rgba(0,0,0,0.8)',
+                              borderColor: adminConfig.betBorderColor || 'rgba(139,105,20,0.6)',
+                            }}
+                            className={`absolute cursor-move backdrop-blur-md px-2 py-1 rounded-xl border-2 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-lg transition-shadow ${
+                              selectedElement === 'bet' ? 'ring-2 ring-amber-400 border-amber-300 shadow-[0_0_20px_rgba(245,158,11,0.8)]' : ''
+                            }`}
+                          >
+                            <div className="flex items-center gap-1">
+                              <div className="w-4 h-4 rounded bg-white/10 flex items-center justify-center text-white">
+                                <Minus className="w-2.5 h-2.5" />
                               </div>
-                              <input
-                                type="range"
-                                min="-60"
-                                max="60"
-                                value={pos.offsetX || 0}
-                                onChange={(e) => handleUpdateIndividualReelPos(rIdx, { offsetX: parseInt(e.target.value) })}
-                                className="w-full accent-amber-500 cursor-pointer h-1"
+                              <div className="flex flex-col items-center px-1">
+                                <span className="text-[8px] text-amber-400 uppercase font-black tracking-wider flex items-center gap-1">
+                                  <span>Aposta</span>
+                                  {selectedElement === 'bet' && <span className="text-amber-300 font-mono text-[7px]">(X:{adminConfig.betLeft}%)</span>}
+                                </span>
+                                <span 
+                                  style={{ color: adminConfig.betTextColor || '#fde073' }}
+                                  className="text-xs font-black whitespace-nowrap"
+                                >
+                                  R$ {gameState.bet.toFixed(2)}
+                                </span>
+                              </div>
+                              <div className="w-4 h-4 rounded bg-white/10 flex items-center justify-center text-white">
+                                <Plus className="w-2.5 h-2.5" />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Slot Machine Area Element */}
+                        {adminConfig.slotVisible !== false && (
+                          <div
+                            onMouseDown={handleSlotMouseDown}
+                            style={{
+                              top: `${adminConfig.slotTop ?? 28}%`,
+                              left: `${adminConfig.slotLeft ?? 5}%`,
+                              width: `${adminConfig.slotWidth ?? 90}%`,
+                              height: `${adminConfig.slotHeight ?? 48}%`,
+                              transform: `scale(${(adminConfig.slotScale ?? 100) / 100}) rotate(${adminConfig.slotRotation || 0}deg)`,
+                              opacity: (adminConfig.slotOpacity ?? 100) / 100,
+                              zIndex: adminConfig.slotZIndex ?? 10,
+                            }}
+                            className={`absolute border-2 rounded-xl flex flex-col items-center justify-center cursor-move transition-all ${
+                              selectedElement === 'slot'
+                                ? 'border-amber-400 bg-amber-500/10 shadow-[0_0_25px_rgba(245,158,11,0.5)] ring-2 ring-amber-300'
+                                : 'border-amber-400/50 bg-black/20 hover:border-amber-300'
+                            }`}
+                          >
+                            {/* Selected Badge Header */}
+                            <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-amber-400 text-black px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider shadow pointer-events-none z-30 whitespace-nowrap flex items-center gap-1">
+                              <span>Slot Machine</span>
+                              <span className="font-mono text-[7px] text-black/70">({adminConfig.slotWidth}%x{adminConfig.slotHeight}%)</span>
+                            </div>
+
+                            {/* Individual Reel Drag Badges */}
+                            <div className="absolute top-1 left-0 right-0 z-40 flex justify-around px-1 pointer-events-auto">
+                              {Array.from({ length: numReels }).map((_, rIdx) => (
+                                <button
+                                  key={rIdx}
+                                  type="button"
+                                  onMouseDown={(e) => handleReelMouseDown(rIdx, e)}
+                                  className="px-1.5 py-0.5 rounded bg-amber-500 hover:bg-yellow-300 text-black text-[9px] font-black shadow border border-black cursor-grab active:cursor-grabbing"
+                                  title={`Arraste o Slot R${rIdx + 1} individualmente`}
+                                >
+                                  R{rIdx + 1}
+                                </button>
+                              ))}
+                            </div>
+
+                            {/* Real SlotMachine rendered inside preview */}
+                            <div className="w-full h-full pointer-events-none flex items-center justify-center p-1">
+                              <SlotMachine 
+                                isSpinning={testSpinning} 
+                                grid={[
+                                  ['Castle', 'Sword', 'Diamond', 'Crown', 'Lion'],
+                                  ['Shield', 'Queen', 'Dragon', 'King', 'Coin'],
+                                  ['Lion', 'Diamond', 'Castle', 'Sword', 'Crown'],
+                                  ['Dragon', 'Castle', 'Shield', 'Queen', 'King'],
+                                  ['Sword', 'Coin', 'Lion', 'Diamond', 'Crown'],
+                                  ['Crown', 'Dragon', 'King', 'Shield', 'Castle'],
+                                ].slice(0, numReels).map(col => col.slice(0, numRows))} 
+                                customSymbols={adminConfig.customSymbols}
+                                customSymbolConfigs={adminConfig.customSymbolConfigs}
+                                showReelBorders={adminConfig.showReelBorders}
+                                showReelBg={adminConfig.showReelBg}
+                                individualReelPositions={adminConfig.individualReelPositions}
+                                spinStyle={adminConfig.spinStyle}
+                                paylines={adminConfig.paylines}
+                                numReels={numReels}
+                                numRows={numRows}
                               />
                             </div>
 
-                            <div className="space-y-1">
-                              <div className="flex justify-between text-[10px] text-gray-300">
-                                <span>Offset Y:</span>
-                                <span>{pos.offsetY || 0}px</span>
+                            {/* Bottom-Right Resize Handle */}
+                            <div
+                              onMouseDown={handleSlotResizeMouseDown}
+                              className="absolute -bottom-2 -right-2 w-5 h-5 bg-amber-400 hover:bg-yellow-200 border border-black rounded-full cursor-se-resize shadow-lg flex items-center justify-center z-30"
+                              title="Arraste para Redimensionar o Slot"
+                            >
+                              <div className="w-2 h-2 border-r-2 border-b-2 border-black" />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Spin Button Element */}
+                        {adminConfig.spinVisible !== false && (
+                          <div
+                            onMouseDown={handleSpinMouseDown}
+                            style={{
+                              bottom: `${adminConfig.spinBottom ?? 4}%`,
+                              left: `${adminConfig.spinLeft ?? 50}%`,
+                              transform: `translateX(-50%) scale(${(adminConfig.spinScale ?? 100) / 100}) rotate(${adminConfig.spinRotation || 0}deg)`,
+                              opacity: (adminConfig.spinOpacity ?? 100) / 100,
+                              zIndex: adminConfig.spinZIndex ?? 20,
+                            }}
+                            className={`absolute cursor-move transition-all ${
+                              selectedElement === 'spin'
+                                ? 'ring-4 ring-red-400 ring-offset-2 ring-offset-black rounded-full shadow-[0_0_25px_rgba(239,68,68,0.8)] scale-105'
+                                : ''
+                            }`}
+                          >
+                            <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-red-600 text-white px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider shadow whitespace-nowrap pointer-events-none">
+                              Botão Girar
+                            </div>
+                            <SpinButton onSpin={() => {}} isSpinning={testSpinning} />
+                          </div>
+                        )}
+                      </div>
+
+                      <p className="text-[10px] text-gray-400 text-center italic">
+                        Dica: Clique em qualquer elemento na tela para selecioná-lo e abrir suas propriedades no painel ao lado.
+                      </p>
+                    </div>
+
+                    {/* RIGHT COLUMN: Numeric Engine Inspector Panel */}
+                    <div className="lg:col-span-7 bg-black/50 p-4 rounded-2xl border border-white/10 space-y-4">
+                      {/* Element Inspector Tabs */}
+                      <div className="flex flex-wrap items-center justify-between border-b border-white/10 pb-3 gap-2">
+                        <span className="text-xs font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                          <Sliders className="w-4 h-4 text-amber-400" />
+                          <span>Inspetor do Elemento:</span>
+                        </span>
+
+                        <div className="flex flex-wrap gap-1">
+                          {[
+                            { id: 'slot', label: '🎰 Slot Machine' },
+                            { id: 'spin', label: '🎯 Botão Girar' },
+                            { id: 'balance', label: '💰 Saldo' },
+                            { id: 'bet', label: '💵 Aposta' },
+                            { id: 'bg', label: '🖼️ Fundo' },
+                          ].map(tab => (
+                            <button
+                              key={tab.id}
+                              type="button"
+                              onClick={() => setSelectedElement(tab.id as any)}
+                              className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                                selectedElement === tab.id
+                                  ? 'bg-amber-500 text-black shadow-md font-black'
+                                  : 'bg-black/60 text-gray-300 hover:bg-white/10 border border-white/5'
+                              }`}
+                            >
+                              {tab.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* INSPECTOR CONTROLS ACCORDING TO SELECTED ELEMENT */}
+
+                      {/* A. SLOT MACHINE INSPECTOR */}
+                      {selectedElement === 'slot' && (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/30">
+                            <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                              <span>Configurações Numéricas do Quadro de Slots</span>
+                            </span>
+                            
+                            <div className="flex items-center gap-2">
+                              {/* Lock Toggle */}
+                              <button
+                                type="button"
+                                onClick={() => onUpdateAdminConfig({ slotLocked: !adminConfig.slotLocked })}
+                                className={`px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1 border transition cursor-pointer ${
+                                  adminConfig.slotLocked ? 'bg-red-500/20 text-red-300 border-red-500/50' : 'bg-black/40 text-gray-300 border-white/10'
+                                }`}
+                              >
+                                {adminConfig.slotLocked ? <Lock className="w-3 h-3 text-red-400" /> : <Unlock className="w-3 h-3 text-gray-400" />}
+                                <span>{adminConfig.slotLocked ? 'Trava Ativa' : 'Livre'}</span>
+                              </button>
+
+                              {/* Visible Toggle */}
+                              <button
+                                type="button"
+                                onClick={() => onUpdateAdminConfig({ slotVisible: adminConfig.slotVisible === false })}
+                                className={`px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1 border transition cursor-pointer ${
+                                  adminConfig.slotVisible !== false ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50' : 'bg-red-500/20 text-red-300 border-red-500/50'
+                                }`}
+                              >
+                                {adminConfig.slotVisible !== false ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                                <span>{adminConfig.slotVisible !== false ? 'Visível' : 'Oculto'}</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Transform Coordinates Grid */}
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            {/* Left X */}
+                            <div className="space-y-1 bg-black/40 p-2.5 rounded-xl border border-white/5">
+                              <div className="flex justify-between items-center text-xs text-gray-300 font-bold">
+                                <span>Posição X (Left):</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  value={adminConfig.slotLeft ?? 5}
+                                  onChange={(e) => onUpdateAdminConfig({ slotLeft: Math.max(0, Math.min(100, parseInt(e.target.value) || 0)) })}
+                                  className="w-14 px-1 py-0.5 bg-black border border-amber-500/50 rounded text-right text-amber-300 font-mono text-xs"
+                                />
                               </div>
                               <input
                                 type="range"
-                                min="-60"
-                                max="60"
-                                value={pos.offsetY || 0}
-                                onChange={(e) => handleUpdateIndividualReelPos(rIdx, { offsetY: parseInt(e.target.value) })}
-                                className="w-full accent-amber-500 cursor-pointer h-1"
+                                min="0"
+                                max="80"
+                                value={adminConfig.slotLeft ?? 5}
+                                onChange={(e) => onUpdateAdminConfig({ slotLeft: parseInt(e.target.value) })}
+                                className="w-full accent-amber-500 cursor-pointer"
                               />
                             </div>
 
-                            <div className="space-y-1">
-                              <div className="flex justify-between text-[10px] text-gray-300">
-                                <span>Escala / Zoom:</span>
-                                <span>{pos.scale || 100}%</span>
+                            {/* Top Y */}
+                            <div className="space-y-1 bg-black/40 p-2.5 rounded-xl border border-white/5">
+                              <div className="flex justify-between items-center text-xs text-gray-300 font-bold">
+                                <span>Posição Y (Top):</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  value={adminConfig.slotTop ?? 28}
+                                  onChange={(e) => onUpdateAdminConfig({ slotTop: Math.max(0, Math.min(100, parseInt(e.target.value) || 0)) })}
+                                  className="w-14 px-1 py-0.5 bg-black border border-amber-500/50 rounded text-right text-amber-300 font-mono text-xs"
+                                />
                               </div>
                               <input
                                 type="range"
-                                min="60"
-                                max="150"
-                                value={pos.scale || 100}
-                                onChange={(e) => handleUpdateIndividualReelPos(rIdx, { scale: parseInt(e.target.value) })}
-                                className="w-full accent-amber-500 cursor-pointer h-1"
+                                min="0"
+                                max="80"
+                                value={adminConfig.slotTop ?? 28}
+                                onChange={(e) => onUpdateAdminConfig({ slotTop: parseInt(e.target.value) })}
+                                className="w-full accent-amber-500 cursor-pointer"
+                              />
+                            </div>
+
+                            {/* Width % */}
+                            <div className="space-y-1 bg-black/40 p-2.5 rounded-xl border border-white/5">
+                              <div className="flex justify-between items-center text-xs text-gray-300 font-bold">
+                                <span>Largura (Width %):</span>
+                                <input
+                                  type="number"
+                                  min="15"
+                                  max="95"
+                                  value={adminConfig.slotWidth ?? 90}
+                                  onChange={(e) => onUpdateAdminConfig({ slotWidth: Math.max(15, Math.min(95, parseInt(e.target.value) || 90)) })}
+                                  className="w-14 px-1 py-0.5 bg-black border border-amber-500/50 rounded text-right text-amber-300 font-mono text-xs"
+                                />
+                              </div>
+                              <input
+                                type="range"
+                                min="15"
+                                max="95"
+                                value={adminConfig.slotWidth ?? 90}
+                                onChange={(e) => onUpdateAdminConfig({ slotWidth: parseInt(e.target.value) })}
+                                className="w-full accent-amber-500 cursor-pointer"
+                              />
+                            </div>
+
+                            {/* Height % */}
+                            <div className="space-y-1 bg-black/40 p-2.5 rounded-xl border border-white/5">
+                              <div className="flex justify-between items-center text-xs text-gray-300 font-bold">
+                                <span>Altura (Height %):</span>
+                                <input
+                                  type="number"
+                                  min="15"
+                                  max="95"
+                                  value={adminConfig.slotHeight ?? 48}
+                                  onChange={(e) => onUpdateAdminConfig({ slotHeight: Math.max(15, Math.min(95, parseInt(e.target.value) || 48)) })}
+                                  className="w-14 px-1 py-0.5 bg-black border border-amber-500/50 rounded text-right text-amber-300 font-mono text-xs"
+                                />
+                              </div>
+                              <input
+                                type="range"
+                                min="15"
+                                max="95"
+                                value={adminConfig.slotHeight ?? 48}
+                                onChange={(e) => onUpdateAdminConfig({ slotHeight: parseInt(e.target.value) })}
+                                className="w-full accent-amber-500 cursor-pointer"
+                              />
+                            </div>
+
+                            {/* Scale % */}
+                            <div className="space-y-1 bg-black/40 p-2.5 rounded-xl border border-white/5">
+                              <div className="flex justify-between items-center text-xs text-gray-300 font-bold">
+                                <span>Escala / Zoom (%):</span>
+                                <input
+                                  type="number"
+                                  min="50"
+                                  max="200"
+                                  value={adminConfig.slotScale ?? 100}
+                                  onChange={(e) => onUpdateAdminConfig({ slotScale: parseInt(e.target.value) || 100 })}
+                                  className="w-14 px-1 py-0.5 bg-black border border-amber-500/50 rounded text-right text-amber-300 font-mono text-xs"
+                                />
+                              </div>
+                              <input
+                                type="range"
+                                min="50"
+                                max="200"
+                                value={adminConfig.slotScale ?? 100}
+                                onChange={(e) => onUpdateAdminConfig({ slotScale: parseInt(e.target.value) })}
+                                className="w-full accent-amber-500 cursor-pointer"
+                              />
+                            </div>
+
+                            {/* Rotation deg */}
+                            <div className="space-y-1 bg-black/40 p-2.5 rounded-xl border border-white/5">
+                              <div className="flex justify-between items-center text-xs text-gray-300 font-bold">
+                                <span>Rotação (º):</span>
+                                <input
+                                  type="number"
+                                  min="-180"
+                                  max="180"
+                                  value={adminConfig.slotRotation || 0}
+                                  onChange={(e) => onUpdateAdminConfig({ slotRotation: parseInt(e.target.value) || 0 })}
+                                  className="w-14 px-1 py-0.5 bg-black border border-amber-500/50 rounded text-right text-amber-300 font-mono text-xs"
+                                />
+                              </div>
+                              <input
+                                type="range"
+                                min="-180"
+                                max="180"
+                                value={adminConfig.slotRotation || 0}
+                                onChange={(e) => onUpdateAdminConfig({ slotRotation: parseInt(e.target.value) })}
+                                className="w-full accent-amber-500 cursor-pointer"
+                              />
+                            </div>
+
+                            {/* Opacity % */}
+                            <div className="space-y-1 bg-black/40 p-2.5 rounded-xl border border-white/5">
+                              <div className="flex justify-between items-center text-xs text-gray-300 font-bold">
+                                <span>Opacidade (%):</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  value={adminConfig.slotOpacity ?? 100}
+                                  onChange={(e) => onUpdateAdminConfig({ slotOpacity: parseInt(e.target.value) || 100 })}
+                                  className="w-14 px-1 py-0.5 bg-black border border-amber-500/50 rounded text-right text-amber-300 font-mono text-xs"
+                                />
+                              </div>
+                              <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                value={adminConfig.slotOpacity ?? 100}
+                                onChange={(e) => onUpdateAdminConfig({ slotOpacity: parseInt(e.target.value) })}
+                                className="w-full accent-amber-500 cursor-pointer"
+                              />
+                            </div>
+
+                            {/* Z-Index */}
+                            <div className="space-y-1 bg-black/40 p-2.5 rounded-xl border border-white/5">
+                              <div className="flex justify-between items-center text-xs text-gray-300 font-bold">
+                                <span>Camada (Z-Index):</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="50"
+                                  value={adminConfig.slotZIndex ?? 10}
+                                  onChange={(e) => onUpdateAdminConfig({ slotZIndex: parseInt(e.target.value) || 10 })}
+                                  className="w-14 px-1 py-0.5 bg-black border border-amber-500/50 rounded text-right text-amber-300 font-mono text-xs"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Spin Style Selector & Options */}
+                          <div className="space-y-2 pt-2 border-t border-white/10">
+                            <span className="text-xs font-bold text-amber-400 uppercase tracking-wider block">
+                              Estilo de Animação de Giro dos Slots
+                            </span>
+
+                            <div className="grid grid-cols-3 gap-2">
+                              {[
+                                { id: 'smooth', name: 'Suave Standard', badge: 'Smooth' },
+                                { id: 'turbo', name: 'Hyper Turbo', badge: 'Fast' },
+                                { id: 'cascade', name: 'Cascata Queda', badge: 'Gravity' },
+                              ].map(s => (
+                                <button
+                                  key={s.id}
+                                  type="button"
+                                  onClick={() => onUpdateAdminConfig({ spinStyle: s.id as any })}
+                                  className={`p-2 rounded-xl border text-left cursor-pointer transition ${
+                                    (adminConfig.spinStyle || 'smooth') === s.id
+                                      ? 'bg-amber-500/20 border-amber-400 text-amber-300 font-extrabold'
+                                      : 'bg-black/60 border-white/10 text-gray-400 hover:bg-white/5'
+                                  }`}
+                                >
+                                  <div className="text-xs">{s.name}</div>
+                                  <div className="text-[9px] text-gray-400 uppercase font-mono">{s.badge}</div>
+                                </button>
+                              ))}
+                            </div>
+
+                            <div className="flex flex-wrap gap-4 pt-1">
+                              <label className="flex items-center gap-2 cursor-pointer text-xs text-gray-200">
+                                <input
+                                  type="checkbox"
+                                  checked={!!adminConfig.showReelBorders}
+                                  onChange={(e) => onUpdateAdminConfig({ showReelBorders: e.target.checked })}
+                                  className="w-4 h-4 accent-amber-500 rounded"
+                                />
+                                <span>Bordas nas Colunas</span>
+                              </label>
+
+                              <label className="flex items-center gap-2 cursor-pointer text-xs text-gray-200">
+                                <input
+                                  type="checkbox"
+                                  checked={!!adminConfig.showReelBg}
+                                  onChange={(e) => onUpdateAdminConfig({ showReelBg: e.target.checked })}
+                                  className="w-4 h-4 accent-amber-500 rounded"
+                                />
+                                <span>Fundo Escuro nas Colunas</span>
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* B. SPIN BUTTON INSPECTOR */}
+                      {selectedElement === 'spin' && (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between bg-red-500/10 p-2.5 rounded-xl border border-red-500/30">
+                            <span className="text-xs font-bold text-red-300 flex items-center gap-1.5">
+                              <span>Configurações do Botão Girar</span>
+                            </span>
+
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => onUpdateAdminConfig({ spinLocked: !adminConfig.spinLocked })}
+                                className={`px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1 border transition cursor-pointer ${
+                                  adminConfig.spinLocked ? 'bg-red-500/20 text-red-300 border-red-500/50' : 'bg-black/40 text-gray-300 border-white/10'
+                                }`}
+                              >
+                                {adminConfig.spinLocked ? <Lock className="w-3 h-3 text-red-400" /> : <Unlock className="w-3 h-3 text-gray-400" />}
+                                <span>{adminConfig.spinLocked ? 'Trava Ativa' : 'Livre'}</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => onUpdateAdminConfig({ spinVisible: adminConfig.spinVisible === false })}
+                                className={`px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1 border transition cursor-pointer ${
+                                  adminConfig.spinVisible !== false ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50' : 'bg-red-500/20 text-red-300 border-red-500/50'
+                                }`}
+                              >
+                                {adminConfig.spinVisible !== false ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                                <span>{adminConfig.spinVisible !== false ? 'Visível' : 'Oculto'}</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            {/* X Left */}
+                            <div className="space-y-1 bg-black/40 p-2.5 rounded-xl border border-white/5">
+                              <div className="flex justify-between items-center text-xs text-gray-300 font-bold">
+                                <span>Posição X (Left %):</span>
+                                <input
+                                  type="number"
+                                  min="10"
+                                  max="90"
+                                  value={adminConfig.spinLeft ?? 50}
+                                  onChange={(e) => onUpdateAdminConfig({ spinLeft: Math.max(10, Math.min(90, parseInt(e.target.value) || 50)) })}
+                                  className="w-14 px-1 py-0.5 bg-black border border-red-500/50 rounded text-right text-red-300 font-mono text-xs"
+                                />
+                              </div>
+                              <input
+                                type="range"
+                                min="10"
+                                max="90"
+                                value={adminConfig.spinLeft ?? 50}
+                                onChange={(e) => onUpdateAdminConfig({ spinLeft: parseInt(e.target.value) })}
+                                className="w-full accent-red-500 cursor-pointer"
+                              />
+                            </div>
+
+                            {/* Y Bottom */}
+                            <div className="space-y-1 bg-black/40 p-2.5 rounded-xl border border-white/5">
+                              <div className="flex justify-between items-center text-xs text-gray-300 font-bold">
+                                <span>Posição Y (Bottom %):</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="80"
+                                  value={adminConfig.spinBottom ?? 4}
+                                  onChange={(e) => onUpdateAdminConfig({ spinBottom: Math.max(0, Math.min(80, parseInt(e.target.value) || 0)) })}
+                                  className="w-14 px-1 py-0.5 bg-black border border-red-500/50 rounded text-right text-red-300 font-mono text-xs"
+                                />
+                              </div>
+                              <input
+                                type="range"
+                                min="0"
+                                max="80"
+                                value={adminConfig.spinBottom ?? 4}
+                                onChange={(e) => onUpdateAdminConfig({ spinBottom: parseInt(e.target.value) })}
+                                className="w-full accent-red-500 cursor-pointer"
+                              />
+                            </div>
+
+                            {/* Scale % */}
+                            <div className="space-y-1 bg-black/40 p-2.5 rounded-xl border border-white/5">
+                              <div className="flex justify-between items-center text-xs text-gray-300 font-bold">
+                                <span>Escala (%):</span>
+                                <input
+                                  type="number"
+                                  min="50"
+                                  max="200"
+                                  value={adminConfig.spinScale ?? 100}
+                                  onChange={(e) => onUpdateAdminConfig({ spinScale: parseInt(e.target.value) || 100 })}
+                                  className="w-14 px-1 py-0.5 bg-black border border-red-500/50 rounded text-right text-red-300 font-mono text-xs"
+                                />
+                              </div>
+                              <input
+                                type="range"
+                                min="50"
+                                max="200"
+                                value={adminConfig.spinScale ?? 100}
+                                onChange={(e) => onUpdateAdminConfig({ spinScale: parseInt(e.target.value) })}
+                                className="w-full accent-red-500 cursor-pointer"
+                              />
+                            </div>
+
+                            {/* Rotation deg */}
+                            <div className="space-y-1 bg-black/40 p-2.5 rounded-xl border border-white/5">
+                              <div className="flex justify-between items-center text-xs text-gray-300 font-bold">
+                                <span>Rotação (º):</span>
+                                <input
+                                  type="number"
+                                  min="-180"
+                                  max="180"
+                                  value={adminConfig.spinRotation || 0}
+                                  onChange={(e) => onUpdateAdminConfig({ spinRotation: parseInt(e.target.value) || 0 })}
+                                  className="w-14 px-1 py-0.5 bg-black border border-red-500/50 rounded text-right text-red-300 font-mono text-xs"
+                                />
+                              </div>
+                              <input
+                                type="range"
+                                min="-180"
+                                max="180"
+                                value={adminConfig.spinRotation || 0}
+                                onChange={(e) => onUpdateAdminConfig({ spinRotation: parseInt(e.target.value) })}
+                                className="w-full accent-red-500 cursor-pointer"
+                              />
+                            </div>
+
+                            {/* Opacity % */}
+                            <div className="space-y-1 bg-black/40 p-2.5 rounded-xl border border-white/5">
+                              <div className="flex justify-between items-center text-xs text-gray-300 font-bold">
+                                <span>Opacidade (%):</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  value={adminConfig.spinOpacity ?? 100}
+                                  onChange={(e) => onUpdateAdminConfig({ spinOpacity: parseInt(e.target.value) || 100 })}
+                                  className="w-14 px-1 py-0.5 bg-black border border-red-500/50 rounded text-right text-red-300 font-mono text-xs"
+                                />
+                              </div>
+                              <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                value={adminConfig.spinOpacity ?? 100}
+                                onChange={(e) => onUpdateAdminConfig({ spinOpacity: parseInt(e.target.value) })}
+                                className="w-full accent-red-500 cursor-pointer"
+                              />
+                            </div>
+
+                            {/* Z-Index */}
+                            <div className="space-y-1 bg-black/40 p-2.5 rounded-xl border border-white/5">
+                              <div className="flex justify-between items-center text-xs text-gray-300 font-bold">
+                                <span>Camada (Z-Index):</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="50"
+                                  value={adminConfig.spinZIndex ?? 20}
+                                  onChange={(e) => onUpdateAdminConfig({ spinZIndex: parseInt(e.target.value) || 20 })}
+                                  className="w-14 px-1 py-0.5 bg-black border border-red-500/50 rounded text-right text-red-300 font-mono text-xs"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* C. BALANCE BOX INSPECTOR */}
+                      {selectedElement === 'balance' && (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between bg-yellow-500/10 p-2.5 rounded-xl border border-yellow-500/30">
+                            <span className="text-xs font-bold text-yellow-300 flex items-center gap-1.5">
+                              <span>Configurações do Bloco de Saldo</span>
+                            </span>
+
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => onUpdateAdminConfig({ balanceLocked: !adminConfig.balanceLocked })}
+                                className={`px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1 border transition cursor-pointer ${
+                                  adminConfig.balanceLocked ? 'bg-red-500/20 text-red-300 border-red-500/50' : 'bg-black/40 text-gray-300 border-white/10'
+                                }`}
+                              >
+                                {adminConfig.balanceLocked ? <Lock className="w-3 h-3 text-red-400" /> : <Unlock className="w-3 h-3 text-gray-400" />}
+                                <span>{adminConfig.balanceLocked ? 'Trava Ativa' : 'Livre'}</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => onUpdateAdminConfig({ balanceVisible: adminConfig.balanceVisible === false })}
+                                className={`px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1 border transition cursor-pointer ${
+                                  adminConfig.balanceVisible !== false ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50' : 'bg-red-500/20 text-red-300 border-red-500/50'
+                                }`}
+                              >
+                                {adminConfig.balanceVisible !== false ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                                <span>{adminConfig.balanceVisible !== false ? 'Visível' : 'Oculto'}</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            {/* Left X */}
+                            <div className="space-y-1 bg-black/40 p-2.5 rounded-xl border border-white/5">
+                              <div className="flex justify-between items-center text-xs text-gray-300 font-bold">
+                                <span>Posição X (Left %):</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="80"
+                                  value={adminConfig.balanceLeft ?? 3}
+                                  onChange={(e) => onUpdateAdminConfig({ balanceLeft: Math.max(0, Math.min(80, parseInt(e.target.value) || 0)) })}
+                                  className="w-14 px-1 py-0.5 bg-black border border-yellow-500/50 rounded text-right text-yellow-300 font-mono text-xs"
+                                />
+                              </div>
+                              <input
+                                type="range"
+                                min="0"
+                                max="80"
+                                value={adminConfig.balanceLeft ?? 3}
+                                onChange={(e) => onUpdateAdminConfig({ balanceLeft: parseInt(e.target.value) })}
+                                className="w-full accent-yellow-400 cursor-pointer"
+                              />
+                            </div>
+
+                            {/* Top Y */}
+                            <div className="space-y-1 bg-black/40 p-2.5 rounded-xl border border-white/5">
+                              <div className="flex justify-between items-center text-xs text-gray-300 font-bold">
+                                <span>Posição Y (Top %):</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="85"
+                                  value={adminConfig.balanceTop ?? 3}
+                                  onChange={(e) => onUpdateAdminConfig({ balanceTop: Math.max(0, Math.min(85, parseInt(e.target.value) || 0)) })}
+                                  className="w-14 px-1 py-0.5 bg-black border border-yellow-500/50 rounded text-right text-yellow-300 font-mono text-xs"
+                                />
+                              </div>
+                              <input
+                                type="range"
+                                min="0"
+                                max="85"
+                                value={adminConfig.balanceTop ?? 3}
+                                onChange={(e) => onUpdateAdminConfig({ balanceTop: parseInt(e.target.value) })}
+                                className="w-full accent-yellow-400 cursor-pointer"
+                              />
+                            </div>
+
+                            {/* Scale % */}
+                            <div className="space-y-1 bg-black/40 p-2.5 rounded-xl border border-white/5">
+                              <div className="flex justify-between items-center text-xs text-gray-300 font-bold">
+                                <span>Escala (%):</span>
+                                <input
+                                  type="number"
+                                  min="50"
+                                  max="180"
+                                  value={adminConfig.balanceScale ?? 100}
+                                  onChange={(e) => onUpdateAdminConfig({ balanceScale: parseInt(e.target.value) || 100 })}
+                                  className="w-14 px-1 py-0.5 bg-black border border-yellow-500/50 rounded text-right text-yellow-300 font-mono text-xs"
+                                />
+                              </div>
+                              <input
+                                type="range"
+                                min="50"
+                                max="180"
+                                value={adminConfig.balanceScale ?? 100}
+                                onChange={(e) => onUpdateAdminConfig({ balanceScale: parseInt(e.target.value) })}
+                                className="w-full accent-yellow-400 cursor-pointer"
                               />
                             </div>
                           </div>
-                        );
-                      })}
+
+                          {/* Color Customizer */}
+                          <div className="pt-2 border-t border-white/10 space-y-2">
+                            <span className="text-xs font-bold text-yellow-300 uppercase tracking-wider block">Cores do Bloco de Saldo</span>
+                            <div className="grid grid-cols-3 gap-3">
+                              <div className="space-y-1">
+                                <label className="text-[10px] text-gray-400 block">Cor Fundo</label>
+                                <input
+                                  type="color"
+                                  value={adminConfig.balanceBgColor && adminConfig.balanceBgColor.startsWith('#') ? adminConfig.balanceBgColor : '#000000'}
+                                  onChange={(e) => onUpdateAdminConfig({ balanceBgColor: e.target.value })}
+                                  className="w-full h-8 rounded bg-transparent border border-gray-600 cursor-pointer"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-[10px] text-gray-400 block">Cor Texto</label>
+                                <input
+                                  type="color"
+                                  value={adminConfig.balanceTextColor && adminConfig.balanceTextColor.startsWith('#') ? adminConfig.balanceTextColor : '#ffffff'}
+                                  onChange={(e) => onUpdateAdminConfig({ balanceTextColor: e.target.value })}
+                                  className="w-full h-8 rounded bg-transparent border border-gray-600 cursor-pointer"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-[10px] text-gray-400 block">Cor Borda</label>
+                                <input
+                                  type="color"
+                                  value={adminConfig.balanceBorderColor && adminConfig.balanceBorderColor.startsWith('#') ? adminConfig.balanceBorderColor : '#d4af37'}
+                                  onChange={(e) => onUpdateAdminConfig({ balanceBorderColor: e.target.value })}
+                                  className="w-full h-8 rounded bg-transparent border border-gray-600 cursor-pointer"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* D. BET BOX INSPECTOR */}
+                      {selectedElement === 'bet' && (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/30">
+                            <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                              <span>Configurações do Bloco de Aposta</span>
+                            </span>
+
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => onUpdateAdminConfig({ betLocked: !adminConfig.betLocked })}
+                                className={`px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1 border transition cursor-pointer ${
+                                  adminConfig.betLocked ? 'bg-red-500/20 text-red-300 border-red-500/50' : 'bg-black/40 text-gray-300 border-white/10'
+                                }`}
+                              >
+                                {adminConfig.betLocked ? <Lock className="w-3 h-3 text-red-400" /> : <Unlock className="w-3 h-3 text-gray-400" />}
+                                <span>{adminConfig.betLocked ? 'Trava Ativa' : 'Livre'}</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => onUpdateAdminConfig({ betVisible: adminConfig.betVisible === false })}
+                                className={`px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1 border transition cursor-pointer ${
+                                  adminConfig.betVisible !== false ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50' : 'bg-red-500/20 text-red-300 border-red-500/50'
+                                }`}
+                              >
+                                {adminConfig.betVisible !== false ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                                <span>{adminConfig.betVisible !== false ? 'Visível' : 'Oculto'}</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            {/* Left X */}
+                            <div className="space-y-1 bg-black/40 p-2.5 rounded-xl border border-white/5">
+                              <div className="flex justify-between items-center text-xs text-gray-300 font-bold">
+                                <span>Posição X (Left %):</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="80"
+                                  value={adminConfig.betLeft ?? 55}
+                                  onChange={(e) => onUpdateAdminConfig({ betLeft: Math.max(0, Math.min(80, parseInt(e.target.value) || 0)) })}
+                                  className="w-14 px-1 py-0.5 bg-black border border-amber-500/50 rounded text-right text-amber-300 font-mono text-xs"
+                                />
+                              </div>
+                              <input
+                                type="range"
+                                min="0"
+                                max="80"
+                                value={adminConfig.betLeft ?? 55}
+                                onChange={(e) => onUpdateAdminConfig({ betLeft: parseInt(e.target.value) })}
+                                className="w-full accent-amber-500 cursor-pointer"
+                              />
+                            </div>
+
+                            {/* Top Y */}
+                            <div className="space-y-1 bg-black/40 p-2.5 rounded-xl border border-white/5">
+                              <div className="flex justify-between items-center text-xs text-gray-300 font-bold">
+                                <span>Posição Y (Top %):</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="85"
+                                  value={adminConfig.betTop ?? 3}
+                                  onChange={(e) => onUpdateAdminConfig({ betTop: Math.max(0, Math.min(85, parseInt(e.target.value) || 0)) })}
+                                  className="w-14 px-1 py-0.5 bg-black border border-amber-500/50 rounded text-right text-amber-300 font-mono text-xs"
+                                />
+                              </div>
+                              <input
+                                type="range"
+                                min="0"
+                                max="85"
+                                value={adminConfig.betTop ?? 3}
+                                onChange={(e) => onUpdateAdminConfig({ betTop: parseInt(e.target.value) })}
+                                className="w-full accent-amber-500 cursor-pointer"
+                              />
+                            </div>
+
+                            {/* Scale % */}
+                            <div className="space-y-1 bg-black/40 p-2.5 rounded-xl border border-white/5">
+                              <div className="flex justify-between items-center text-xs text-gray-300 font-bold">
+                                <span>Escala (%):</span>
+                                <input
+                                  type="number"
+                                  min="50"
+                                  max="180"
+                                  value={adminConfig.betScale ?? 100}
+                                  onChange={(e) => onUpdateAdminConfig({ betScale: parseInt(e.target.value) || 100 })}
+                                  className="w-14 px-1 py-0.5 bg-black border border-amber-500/50 rounded text-right text-amber-300 font-mono text-xs"
+                                />
+                              </div>
+                              <input
+                                type="range"
+                                min="50"
+                                max="180"
+                                value={adminConfig.betScale ?? 100}
+                                onChange={(e) => onUpdateAdminConfig({ betScale: parseInt(e.target.value) })}
+                                className="w-full accent-amber-500 cursor-pointer"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Colors */}
+                          <div className="pt-2 border-t border-white/10 space-y-2">
+                            <span className="text-xs font-bold text-amber-300 uppercase tracking-wider block">Cores do Bloco de Aposta</span>
+                            <div className="grid grid-cols-3 gap-3">
+                              <div className="space-y-1">
+                                <label className="text-[10px] text-gray-400 block">Cor Fundo</label>
+                                <input
+                                  type="color"
+                                  value={adminConfig.betBgColor && adminConfig.betBgColor.startsWith('#') ? adminConfig.betBgColor : '#000000'}
+                                  onChange={(e) => onUpdateAdminConfig({ betBgColor: e.target.value })}
+                                  className="w-full h-8 rounded bg-transparent border border-gray-600 cursor-pointer"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-[10px] text-gray-400 block">Cor Texto</label>
+                                <input
+                                  type="color"
+                                  value={adminConfig.betTextColor && adminConfig.betTextColor.startsWith('#') ? adminConfig.betTextColor : '#fde073'}
+                                  onChange={(e) => onUpdateAdminConfig({ betTextColor: e.target.value })}
+                                  className="w-full h-8 rounded bg-transparent border border-gray-600 cursor-pointer"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-[10px] text-gray-400 block">Cor Borda</label>
+                                <input
+                                  type="color"
+                                  value={adminConfig.betBorderColor && adminConfig.betBorderColor.startsWith('#') ? adminConfig.betBorderColor : '#8b6914'}
+                                  onChange={(e) => onUpdateAdminConfig({ betBorderColor: e.target.value })}
+                                  className="w-full h-8 rounded bg-transparent border border-gray-600 cursor-pointer"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* E. BACKGROUND / SCREEN INSPECTOR */}
+                      {selectedElement === 'bg' && (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/30">
+                            <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                              <span>Controle Avançado da Mídia de Fundo</span>
+                            </span>
+
+                            <label className="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-black text-[10px] font-black rounded-lg cursor-pointer flex items-center gap-1 transition">
+                              <Upload className="w-3 h-3" />
+                              <span>Upload Imagem/Vídeo</span>
+                              <input type="file" accept="image/*,video/*" onChange={handleBgFileUpload} className="hidden" />
+                            </label>
+                          </div>
+
+                          {/* Direct URL Input */}
+                          <div className="space-y-1">
+                            <label className="text-[10px] text-gray-300 font-bold block">URL Direta (Cloudinary, YouTube, MP4, PNG, JPG):</label>
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                placeholder="https://..."
+                                value={mediaUrlInput}
+                                onChange={(e) => setMediaUrlInput(e.target.value)}
+                                className="flex-1 px-2.5 py-1.5 bg-black/80 border border-white/10 rounded-lg text-xs text-white placeholder:text-gray-500 focus:outline-none focus:border-amber-400 font-mono"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (mediaUrlInput.trim()) {
+                                    onUpdateAdminConfig({ bgImage: mediaUrlInput.trim() });
+                                    setMediaUrlInput('');
+                                  }
+                                }}
+                                className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-black rounded-lg text-xs font-black transition cursor-pointer"
+                              >
+                                Aplicar
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Display Fit Mode Options */}
+                          <div className="space-y-2 pt-2 border-t border-white/10">
+                            <span className="text-xs font-bold text-gray-200 uppercase tracking-wider block">
+                              Modo de Exibição (Fit)
+                            </span>
+                            <div className="grid grid-cols-3 gap-2">
+                              {[
+                                { id: 'contain', name: 'Contain (Ajustar)', desc: 'Imagem inteira sem cortes' },
+                                { id: 'cover', name: 'Cover (Preencher)', desc: 'Preenche toda a tela 9:16' },
+                                { id: 'stretch', name: 'Stretch (Esticar)', desc: 'Estica para cobrir 100%' },
+                              ].map(f => (
+                                <button
+                                  key={f.id}
+                                  type="button"
+                                  onClick={() => onUpdateAdminConfig({ bgFit: f.id as any })}
+                                  className={`p-2.5 rounded-xl border text-left cursor-pointer transition ${
+                                    (adminConfig.bgFit || 'cover') === f.id
+                                      ? 'bg-amber-500/20 border-amber-400 text-amber-300 font-extrabold shadow'
+                                      : 'bg-black/60 border-white/10 text-gray-400 hover:bg-white/5'
+                                  }`}
+                                >
+                                  <div className="text-xs font-bold">{f.name}</div>
+                                  <div className="text-[9px] text-gray-400 leading-tight">{f.desc}</div>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Anchor Position Options */}
+                          <div className="space-y-2 pt-2 border-t border-white/10">
+                            <span className="text-xs font-bold text-gray-200 uppercase tracking-wider block">
+                              Ponto de Âncora (Anchor Position)
+                            </span>
+                            <div className="grid grid-cols-3 gap-1.5">
+                              {[
+                                { id: 'top-left', label: '↖ Topo-Esq' },
+                                { id: 'top', label: '↑ Topo-Centro' },
+                                { id: 'top-right', label: '↗ Topo-Dir' },
+                                { id: 'left', label: '← Centro-Esq' },
+                                { id: 'center', label: '• Centro' },
+                                { id: 'right', label: '→ Centro-Dir' },
+                                { id: 'bottom-left', label: '↙ Baixo-Esq' },
+                                { id: 'bottom', label: '↓ Baixo-Centro' },
+                                { id: 'bottom-right', label: '↘ Baixo-Dir' },
+                              ].map(a => (
+                                <button
+                                  key={a.id}
+                                  type="button"
+                                  onClick={() => onUpdateAdminConfig({ bgAnchor: a.id as any })}
+                                  className={`py-1.5 px-2 rounded-lg text-xs font-bold border transition cursor-pointer text-center ${
+                                    (adminConfig.bgAnchor || 'center') === a.id
+                                      ? 'bg-amber-400 text-black border-amber-300 font-black'
+                                      : 'bg-black/60 border-white/10 text-gray-300 hover:bg-white/10'
+                                  }`}
+                                >
+                                  {a.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Zoom & Reposition Sliders */}
+                          <div className="grid grid-cols-3 gap-3 pt-2 border-t border-white/10">
+                            {/* Offset X */}
+                            <div className="space-y-1 bg-black/40 p-2 rounded-xl border border-white/5">
+                              <div className="flex justify-between items-center text-xs text-gray-300 font-bold">
+                                <span>Offset X (%):</span>
+                                <input
+                                  type="number"
+                                  min="-100"
+                                  max="100"
+                                  value={adminConfig.bgPosX || 0}
+                                  onChange={(e) => onUpdateAdminConfig({ bgPosX: parseInt(e.target.value) || 0 })}
+                                  className="w-12 px-1 py-0.5 bg-black border border-amber-500/50 rounded text-right text-amber-300 font-mono text-xs"
+                                />
+                              </div>
+                              <input
+                                type="range"
+                                min="-100"
+                                max="100"
+                                value={adminConfig.bgPosX || 0}
+                                onChange={(e) => onUpdateAdminConfig({ bgPosX: parseInt(e.target.value) })}
+                                className="w-full accent-amber-500 cursor-pointer"
+                              />
+                            </div>
+
+                            {/* Offset Y */}
+                            <div className="space-y-1 bg-black/40 p-2 rounded-xl border border-white/5">
+                              <div className="flex justify-between items-center text-xs text-gray-300 font-bold">
+                                <span>Offset Y (%):</span>
+                                <input
+                                  type="number"
+                                  min="-100"
+                                  max="100"
+                                  value={adminConfig.bgPosY || 0}
+                                  onChange={(e) => onUpdateAdminConfig({ bgPosY: parseInt(e.target.value) || 0 })}
+                                  className="w-12 px-1 py-0.5 bg-black border border-amber-500/50 rounded text-right text-amber-300 font-mono text-xs"
+                                />
+                              </div>
+                              <input
+                                type="range"
+                                min="-100"
+                                max="100"
+                                value={adminConfig.bgPosY || 0}
+                                onChange={(e) => onUpdateAdminConfig({ bgPosY: parseInt(e.target.value) })}
+                                className="w-full accent-amber-500 cursor-pointer"
+                              />
+                            </div>
+
+                            {/* Zoom % */}
+                            <div className="space-y-1 bg-black/40 p-2 rounded-xl border border-white/5">
+                              <div className="flex justify-between items-center text-xs text-gray-300 font-bold">
+                                <span>Zoom Manual (%):</span>
+                                <input
+                                  type="number"
+                                  min="100"
+                                  max="300"
+                                  value={adminConfig.bgZoom || 100}
+                                  onChange={(e) => onUpdateAdminConfig({ bgZoom: parseInt(e.target.value) || 100 })}
+                                  className="w-12 px-1 py-0.5 bg-black border border-amber-500/50 rounded text-right text-amber-300 font-mono text-xs"
+                                />
+                              </div>
+                              <input
+                                type="range"
+                                min="100"
+                                max="300"
+                                value={adminConfig.bgZoom || 100}
+                                onChange={(e) => onUpdateAdminConfig({ bgZoom: parseInt(e.target.value) })}
+                                className="w-full accent-amber-500 cursor-pointer"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
-
                 </div>
               )}
 
