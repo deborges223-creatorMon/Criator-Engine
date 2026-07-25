@@ -102,6 +102,7 @@ export interface AdminConfig {
   balanceBgColor?: string; // default "#000000b3"
   balanceTextColor?: string; // default "#ffffff"
   balanceBorderColor?: string; // default "#d4af3766"
+  balanceBgImage?: string; // Custom background image URL
   balanceAnchor?: AnchorType;
 
   // Bet Box Customization & Engine Properties
@@ -116,7 +117,42 @@ export interface AdminConfig {
   betBgColor?: string; // default "#000000b3"
   betTextColor?: string; // default "#fde073"
   betBorderColor?: string; // default "#8b691466"
+  betBgImage?: string; // Custom background image URL
   betAnchor?: AnchorType;
+
+  // Win Box 1 (Persistent Win Banner Indicator)
+  winBoxTop?: number; // default 3
+  winBoxLeft?: number; // default 30
+  winBoxScale?: number; // default 100
+  winBoxRotation?: number;
+  winBoxOpacity?: number;
+  winBoxZIndex?: number;
+  winBoxLocked?: boolean;
+  winBoxVisible?: boolean;
+  winBoxBgColor?: string; // default "rgba(16, 185, 129, 0.2)"
+  winBoxTextColor?: string; // default "#34d399"
+  winBoxBorderColor?: string; // default "#10b98188"
+  winBoxBgImage?: string; // Custom background image URL
+  winBoxAnchor?: AnchorType;
+
+  // Win Box 2 (Animated Big Win Counter Overlay)
+  winOverlayTop?: number; // default 20
+  winOverlayLeft?: number; // default 50
+  winOverlayScale?: number; // default 100
+  winOverlayRotation?: number;
+  winOverlayOpacity?: number;
+  winOverlayZIndex?: number;
+  winOverlayLocked?: boolean;
+  winOverlayVisible?: boolean;
+  winOverlayBgColor?: string;
+  winOverlayTextColor?: string;
+  winOverlayBorderColor?: string;
+  winOverlayBgImage?: string; // Custom background image URL
+  winOverlayAnchor?: AnchorType;
+
+  // Additional Frame Background Images
+  slotBgImage?: string;
+  spinBgImage?: string;
 
   // Editor Helpers (Game Engine Mode)
   gridEnabled?: boolean;

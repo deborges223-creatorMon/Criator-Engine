@@ -6,12 +6,20 @@ interface WinCounterOverlayProps {
   winAmount: number;
   isBigWin?: boolean;
   onClose?: () => void;
+  bgColor?: string;
+  textColor?: string;
+  borderColor?: string;
+  bgImage?: string;
 }
 
 export const WinCounterOverlay: React.FC<WinCounterOverlayProps> = ({
   winAmount,
   isBigWin = false,
   onClose,
+  bgColor,
+  textColor,
+  borderColor,
+  bgImage,
 }) => {
   const [displayValue, setDisplayValue] = useState<number>(0);
 
@@ -94,10 +102,19 @@ export const WinCounterOverlay: React.FC<WinCounterOverlayProps> = ({
         {/* Main Win Banner Card */}
         <div 
           onClick={onClose}
+          style={{
+            backgroundColor: bgColor ? bgColor : undefined,
+            borderColor: borderColor ? borderColor : undefined,
+            backgroundImage: bgImage ? `url(${bgImage})` : undefined,
+            backgroundSize: bgImage ? 'cover' : undefined,
+            backgroundPosition: bgImage ? 'center' : undefined,
+          }}
           className={`relative cursor-pointer px-5 py-2.5 sm:px-8 sm:py-3.5 rounded-2xl border-2 flex flex-col items-center justify-center shadow-[0_0_50px_rgba(234,179,8,0.8)] backdrop-blur-xl ${
-            isBigWin
-              ? 'bg-gradient-to-r from-amber-950 via-yellow-600 to-amber-950 border-yellow-300 text-white'
-              : 'bg-gradient-to-r from-emerald-950 via-green-900 to-emerald-950 border-emerald-400 text-white'
+            !bgColor && !bgImage
+              ? isBigWin
+                ? 'bg-gradient-to-r from-amber-950 via-yellow-600 to-amber-950 border-yellow-300 text-white'
+                : 'bg-gradient-to-r from-emerald-950 via-green-900 to-emerald-950 border-emerald-400 text-white'
+              : 'text-white'
           }`}
         >
           {/* Header Title */}
@@ -110,7 +127,10 @@ export const WinCounterOverlay: React.FC<WinCounterOverlayProps> = ({
           </div>
 
           {/* Animated Money Counter */}
-          <div className="flex items-baseline gap-1 font-mono font-black text-2xl sm:text-4xl text-yellow-300 drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)] tracking-tight">
+          <div 
+            style={{ color: textColor ? textColor : undefined }}
+            className="flex items-baseline gap-1 font-mono font-black text-2xl sm:text-4xl text-yellow-300 drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)] tracking-tight"
+          >
             <span className="text-lg sm:text-2xl text-amber-200">R$</span>
             <span>
               {displayValue.toLocaleString('pt-BR', {

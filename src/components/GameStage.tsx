@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Menu, ShieldAlert, Plus, Minus, Coins, Move, Lock, Eye, EyeOff, RotateCw, Scaling, Anchor } from 'lucide-react';
+import { Menu, ShieldAlert, Plus, Minus, Coins, Move, Lock, Eye, EyeOff, RotateCw, Scaling, Anchor, Trophy } from 'lucide-react';
 import { SlotMachine } from './SlotMachine';
 import { SpinButton } from './SpinButton';
 import { BackgroundMedia } from './BackgroundMedia';
@@ -130,6 +130,10 @@ export const GameStage: React.FC<GameStageProps> = ({
         onUpdateAdminConfig({ balanceLeft: newLeft, balanceTop: newTop });
       } else if (selectedElement === 'bet') {
         onUpdateAdminConfig({ betLeft: newLeft, betTop: newTop });
+      } else if (selectedElement === 'winBox') {
+        onUpdateAdminConfig({ winBoxLeft: newLeft, winBoxTop: newTop });
+      } else if (selectedElement === 'winOverlay') {
+        onUpdateAdminConfig({ winOverlayLeft: newLeft, winOverlayTop: newTop });
       }
     };
 
@@ -164,6 +168,26 @@ export const GameStage: React.FC<GameStageProps> = ({
     rotation: adminConfig.betRotation || 0,
     opacity: adminConfig.betOpacity ?? 100,
     zIndex: adminConfig.betZIndex ?? 30,
+  });
+
+  const winBoxStyle = calculateAnchorStyle({
+    anchor: adminConfig.winBoxAnchor || 'top-left',
+    top: adminConfig.winBoxTop ?? 3,
+    left: adminConfig.winBoxLeft ?? 30,
+    scale: adminConfig.winBoxScale ?? 100,
+    rotation: adminConfig.winBoxRotation || 0,
+    opacity: adminConfig.winBoxOpacity ?? 100,
+    zIndex: adminConfig.winBoxZIndex ?? 30,
+  });
+
+  const winOverlayStyle = calculateAnchorStyle({
+    anchor: adminConfig.winOverlayAnchor || 'center',
+    top: adminConfig.winOverlayTop ?? 20,
+    left: adminConfig.winOverlayLeft ?? 50,
+    scale: adminConfig.winOverlayScale ?? 100,
+    rotation: adminConfig.winOverlayRotation || 0,
+    opacity: adminConfig.winOverlayOpacity ?? 100,
+    zIndex: adminConfig.winOverlayZIndex ?? 40,
   });
 
   const slotStyle = calculateAnchorStyle({
@@ -239,6 +263,9 @@ export const GameStage: React.FC<GameStageProps> = ({
               ...balanceStyle,
               backgroundColor: adminConfig.balanceBgColor || 'rgba(0, 0, 0, 0.75)',
               borderColor: adminConfig.balanceBorderColor || 'rgba(212, 175, 55, 0.5)',
+              backgroundImage: adminConfig.balanceBgImage ? `url(${adminConfig.balanceBgImage})` : undefined,
+              backgroundSize: adminConfig.balanceBgImage ? 'cover' : undefined,
+              backgroundPosition: adminConfig.balanceBgImage ? 'center' : undefined,
             }}
             onMouseDown={(e) => handleMouseDown(e, 'balance', adminConfig.balanceLeft ?? 3, adminConfig.balanceTop ?? 3)}
             className={`flex items-center gap-3 backdrop-blur-md px-5 py-2.5 rounded-2xl border shadow-xl transition-shadow cursor-pointer ${
@@ -265,6 +292,9 @@ export const GameStage: React.FC<GameStageProps> = ({
               ...betStyle,
               backgroundColor: adminConfig.betBgColor || 'rgba(0, 0, 0, 0.75)',
               borderColor: adminConfig.betBorderColor || 'rgba(139, 105, 20, 0.5)',
+              backgroundImage: adminConfig.betBgImage ? `url(${adminConfig.betBgImage})` : undefined,
+              backgroundSize: adminConfig.betBgImage ? 'cover' : undefined,
+              backgroundPosition: adminConfig.betBgImage ? 'center' : undefined,
             }}
             onMouseDown={(e) => handleMouseDown(e, 'bet', adminConfig.betLeft ?? 55, adminConfig.betTop ?? 3)}
             className={`flex items-center backdrop-blur-md px-4 py-2 rounded-2xl border gap-3 transition-shadow cursor-pointer ${
@@ -305,13 +335,54 @@ export const GameStage: React.FC<GameStageProps> = ({
           </div>
         )}
 
-        {/* Win Money Animated Counter Overlay */}
-        {gameState.win > 0 && (
-          <WinCounterOverlay 
-            winAmount={gameState.win} 
-            isBigWin={gameState.bigWin} 
-            onClose={() => onClearWin?.()} 
-          />
+        {/* Persistent Win Indicator Banner Badge (Quadro de Ganho 1) */}
+        {adminConfig.winBoxVisible !== false && (
+          <div 
+            style={{
+              ...winBoxStyle,
+              backgroundColor: adminConfig.winBoxBgColor || 'rgba(16, 185, 129, 0.25)',
+              borderColor: adminConfig.winBoxBorderColor || 'rgba(16, 185, 129, 0.6)',
+              backgroundImage: adminConfig.winBoxBgImage ? `url(${adminConfig.winBoxBgImage})` : undefined,
+              backgroundSize: adminConfig.winBoxBgImage ? 'cover' : undefined,
+              backgroundPosition: adminConfig.winBoxBgImage ? 'center' : undefined,
+            }}
+            onMouseDown={(e) => handleMouseDown(e, 'winBox', adminConfig.winBoxLeft ?? 30, adminConfig.winBoxTop ?? 3)}
+            className={`flex items-center gap-3 backdrop-blur-md px-5 py-2.5 rounded-2xl border shadow-xl transition-shadow cursor-pointer ${
+              isEditing && selectedElement === 'winBox' ? 'ring-4 ring-amber-400 border-amber-300' : ''
+            }`}
+          >
+            <Trophy className="w-7 h-7 text-emerald-400 shrink-0" />
+            <div className="flex flex-col">
+              <span className="text-xs text-emerald-400 font-bold uppercase tracking-wider">Ganho</span>
+              <span 
+                style={{ color: adminConfig.winBoxTextColor || '#34d399' }}
+                className="text-2xl font-black"
+              >
+                R$ {gameState.win.toFixed(2)}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Animated Big Win Counter Overlay (Quadro de Ganho 2) */}
+        {(gameState.win > 0 || (isEditing && selectedElement === 'winOverlay')) && adminConfig.winOverlayVisible !== false && (
+          <div
+            style={winOverlayStyle}
+            onMouseDown={(e) => handleMouseDown(e, 'winOverlay', adminConfig.winOverlayLeft ?? 50, adminConfig.winOverlayTop ?? 20)}
+            className={`cursor-pointer ${
+              isEditing && selectedElement === 'winOverlay' ? 'ring-4 ring-amber-400 border-amber-300 rounded-2xl p-1' : ''
+            }`}
+          >
+            <WinCounterOverlay 
+              winAmount={gameState.win > 0 ? gameState.win : 1250.00} 
+              isBigWin={gameState.bigWin || (isEditing && selectedElement === 'winOverlay')} 
+              onClose={() => onClearWin?.()} 
+              bgColor={adminConfig.winOverlayBgColor}
+              textColor={adminConfig.winOverlayTextColor}
+              borderColor={adminConfig.winOverlayBorderColor}
+              bgImage={adminConfig.winOverlayBgImage}
+            />
+          </div>
         )}
 
         {/* Quick Menu & Admin Trigger Buttons */}
@@ -338,7 +409,12 @@ export const GameStage: React.FC<GameStageProps> = ({
         {/* Slot Machine Area */}
         {adminConfig.slotVisible !== false && (
           <div 
-            style={slotStyle}
+            style={{
+              ...slotStyle,
+              backgroundImage: adminConfig.slotBgImage ? `url(${adminConfig.slotBgImage})` : undefined,
+              backgroundSize: adminConfig.slotBgImage ? 'cover' : undefined,
+              backgroundPosition: adminConfig.slotBgImage ? 'center' : undefined,
+            }}
             onMouseDown={(e) => handleMouseDown(e, 'slot', adminConfig.slotLeft ?? 5, adminConfig.slotTop ?? 28)}
             className={`flex items-center justify-center transition-shadow cursor-pointer ${
               isEditing && selectedElement === 'slot' ? 'ring-4 ring-amber-400 border-amber-300 rounded-2xl' : ''
@@ -363,7 +439,12 @@ export const GameStage: React.FC<GameStageProps> = ({
         {/* Spin Button Area */}
         {adminConfig.spinVisible !== false && (
           <div 
-            style={spinStyle}
+            style={{
+              ...spinStyle,
+              backgroundImage: adminConfig.spinBgImage ? `url(${adminConfig.spinBgImage})` : undefined,
+              backgroundSize: adminConfig.spinBgImage ? 'cover' : undefined,
+              backgroundPosition: adminConfig.spinBgImage ? 'center' : undefined,
+            }}
             onMouseDown={(e) => handleMouseDown(e, 'spin', adminConfig.spinLeft ?? 50, adminConfig.spinTop ?? 88)}
             className={`cursor-pointer ${
               isEditing && selectedElement === 'spin' ? 'ring-4 ring-amber-400 border-amber-300 rounded-full' : ''
