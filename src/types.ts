@@ -40,6 +40,8 @@ export interface ReelPosition {
   scale: number; // scale % (50 to 150)
 }
 
+export type AnchorType = 'center' | 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+
 export interface AdminConfig {
   targetRtp: number;
   volatility: 'low' | 'medium' | 'high';
@@ -51,13 +53,18 @@ export interface AdminConfig {
   totalPayout: number;
   autoWinBoost: boolean;
 
+  // Base Virtual Canvas (Resolução do Canvas Base)
+  canvasWidth?: number; // default 1080
+  canvasHeight?: number; // default 1920
+  canvasFit?: 'contain' | 'cover'; // default 'contain'
+
   // Custom Background and Layout Positioning
   bgImage: string;
   bgPosX: number; // X offset in % (-100 to 100)
   bgPosY: number; // Y offset in % (-100 to 100)
   bgZoom: number; // Zoom level (100 to 300%)
   bgFit?: 'cover' | 'contain' | 'stretch';
-  bgAnchor?: 'center' | 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+  bgAnchor?: AnchorType;
 
   // Slot Reel Box Frame Position & Engine Properties
   slotTop: number; // default 28
@@ -69,6 +76,7 @@ export interface AdminConfig {
   slotZIndex?: number; // 0 to 50
   slotLocked?: boolean;
   slotVisible?: boolean;
+  slotAnchor?: AnchorType;
 
   // Spin Button Positioning & Engine Properties
   spinBottom: number; // default 4
@@ -80,6 +88,7 @@ export interface AdminConfig {
   spinZIndex?: number;
   spinLocked?: boolean;
   spinVisible?: boolean;
+  spinAnchor?: AnchorType;
 
   // Balance Box Customization & Engine Properties
   balanceTop?: number; // default 3
@@ -93,6 +102,7 @@ export interface AdminConfig {
   balanceBgColor?: string; // default "#000000b3"
   balanceTextColor?: string; // default "#ffffff"
   balanceBorderColor?: string; // default "#d4af3766"
+  balanceAnchor?: AnchorType;
 
   // Bet Box Customization & Engine Properties
   betTop?: number; // default 3
@@ -106,6 +116,7 @@ export interface AdminConfig {
   betBgColor?: string; // default "#000000b3"
   betTextColor?: string; // default "#fde073"
   betBorderColor?: string; // default "#8b691466"
+  betAnchor?: AnchorType;
 
   // Editor Helpers (Game Engine Mode)
   gridEnabled?: boolean;

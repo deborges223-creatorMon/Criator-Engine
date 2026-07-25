@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, ShieldAlert, Volume2, VolumeX, Plus, Minus, Trophy, Coins } from 'lucide-react';
-import { SlotMachine } from './components/SlotMachine';
-import { SpinButton } from './components/SpinButton';
 import { GameMenuModal } from './components/GameMenuModal';
 import { AdminPanelModal } from './components/AdminPanelModal';
-import { BackgroundMedia } from './components/BackgroundMedia';
-import { WinCounterOverlay } from './components/WinCounterOverlay';
+import { GameStage } from './components/GameStage';
 import { GameState, SymbolType, AdminConfig, GameSettings, SpinHistoryItem, Payline, BonusConfig } from './types';
 
 const ALL_SYMBOLS: SymbolType[] = ['King', 'Queen', 'Crown', 'Lion', 'Sword', 'Shield', 'Castle', 'Diamond', 'Coin', 'Dragon'];
@@ -283,180 +279,20 @@ export default function App() {
   }, [gameSettings.isAutoSpinning, gameState.isSpinning, gameState.balance]);
 
   return (
-    <div className="relative w-full h-screen h-[100dvh] bg-[#020617] font-sans text-white flex items-center justify-center overflow-hidden touch-none select-none p-0 sm:py-2">
+    <div className="relative w-full h-screen h-[100dvh] bg-[#020617] font-sans text-white flex items-center justify-center overflow-hidden touch-none select-none p-0">
       
-      {/* Game Stage - Focused 9:16 Mobile Aspect Ratio Frame */}
-      <div 
-        className="relative w-full h-full max-h-[100dvh] aspect-[9/16] max-w-[460px] bg-[#050914] sm:rounded-3xl sm:border-[5px] sm:border-amber-500/25 shadow-[0_0_90px_rgba(0,0,0,0.95)] overflow-hidden flex items-center justify-center transition-all duration-100"
-      >
-        {/* Background Media Layer (Image or Infinite Loop Video) */}
-        <BackgroundMedia 
-          src={adminConfig.bgImage}
-          posX={adminConfig.bgPosX}
-          posY={adminConfig.bgPosY}
-          zoom={adminConfig.bgZoom}
-          fit={adminConfig.bgFit}
-          anchor={adminConfig.bgAnchor}
+      {/* Game Stage Container */}
+      <div className="relative w-full h-full max-h-[100dvh] aspect-[9/16] max-w-[500px] sm:max-w-[540px] bg-[#050914] sm:rounded-3xl sm:border-[5px] sm:border-amber-500/25 shadow-[0_0_90px_rgba(0,0,0,0.95)] overflow-hidden flex items-center justify-center">
+        <GameStage 
+          adminConfig={adminConfig}
+          gameState={gameState}
+          grid={grid}
+          onSpin={handleSpin}
+          onBetChange={handleBetChange}
+          onOpenMenu={() => setIsMenuOpen(true)}
+          onOpenAdmin={() => setIsAdminOpen(true)}
+          onClearWin={() => setGameState(prev => ({ ...prev, win: 0 }))}
         />
-
-        {/* Balance Widget - Positioned according to Admin Configuration */}
-        {adminConfig.balanceVisible !== false && (
-          <div 
-            style={{
-              top: `${adminConfig.balanceTop ?? 3}%`,
-              left: `${adminConfig.balanceLeft ?? 3}%`,
-              transform: `scale(${(adminConfig.balanceScale ?? 100) / 100}) rotate(${adminConfig.balanceRotation || 0}deg)`,
-              transformOrigin: 'top left',
-              opacity: (adminConfig.balanceOpacity ?? 100) / 100,
-              zIndex: adminConfig.balanceZIndex ?? 30,
-              backgroundColor: adminConfig.balanceBgColor || 'rgba(0, 0, 0, 0.7)',
-              borderColor: adminConfig.balanceBorderColor || 'rgba(212, 175, 55, 0.4)',
-            }}
-            className="absolute flex items-center gap-1.5 sm:gap-3 backdrop-blur-md px-2.5 py-1 sm:px-4 sm:py-2 rounded-xl border shadow-lg transition-all duration-100"
-          >
-            <Coins className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-yellow-400 shrink-0" />
-            <div className="flex flex-col">
-              <span className="text-[9px] sm:text-[10px] text-yellow-500 font-bold uppercase tracking-wider">Saldo</span>
-              <span 
-                style={{ color: adminConfig.balanceTextColor || '#ffffff' }}
-                className="text-xs sm:text-base font-extrabold"
-              >
-                R$ {gameState.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Bet Controller - Positioned according to Admin Configuration */}
-        {adminConfig.betVisible !== false && (
-          <div 
-            style={{
-              top: `${adminConfig.betTop ?? 3}%`,
-              left: `${adminConfig.betLeft ?? 55}%`,
-              transform: `scale(${(adminConfig.betScale ?? 100) / 100}) rotate(${adminConfig.betRotation || 0}deg)`,
-              transformOrigin: 'top left',
-              opacity: (adminConfig.betOpacity ?? 100) / 100,
-              zIndex: adminConfig.betZIndex ?? 30,
-              backgroundColor: adminConfig.betBgColor || 'rgba(0, 0, 0, 0.7)',
-              borderColor: adminConfig.betBorderColor || 'rgba(139, 105, 20, 0.4)',
-            }}
-            className="absolute flex items-center backdrop-blur-md px-2 py-1 rounded-xl border gap-1 sm:gap-2 transition-all duration-100"
-          >
-            <button 
-              onClick={() => handleBetChange(-5)}
-              disabled={gameState.isSpinning}
-              className="w-5 h-5 sm:w-7 sm:h-7 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center text-white disabled:opacity-50 cursor-pointer"
-            >
-              <Minus className="w-3 h-3" />
-            </button>
-            <div className="flex flex-col items-center px-1">
-              <span className="text-[8px] sm:text-[9px] text-gray-400 uppercase font-bold">Aposta</span>
-              <span 
-                style={{ color: adminConfig.betTextColor || '#fde073' }}
-                className="text-xs sm:text-sm font-bold"
-              >
-                R$ {gameState.bet.toFixed(2)}
-              </span>
-            </div>
-            <button 
-              onClick={() => handleBetChange(5)}
-              disabled={gameState.isSpinning}
-              className="w-5 h-5 sm:w-7 sm:h-7 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center text-white disabled:opacity-50 cursor-pointer"
-            >
-              <Plus className="w-3 h-3" />
-            </button>
-          </div>
-        )}
-
-        {/* Win Money Animated Counter Overlay */}
-        {gameState.win > 0 && (
-          <WinCounterOverlay 
-            winAmount={gameState.win} 
-            isBigWin={gameState.bigWin} 
-            onClose={() => setGameState(prev => ({ ...prev, win: 0 }))} 
-          />
-        )}
-
-        {/* Top Right Quick Menu & Win Display */}
-        <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-30 flex items-center gap-1.5 sm:gap-2 pointer-events-auto">
-          {/* Win Display */}
-          {gameState.win > 0 && (
-            <div className="flex items-center gap-1 bg-emerald-950/80 border border-emerald-500/50 px-2.5 py-1 rounded-xl animate-bounce">
-              <Trophy className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="text-xs sm:text-sm font-black text-emerald-300">
-                +R$ {gameState.win.toFixed(2)}
-              </span>
-            </div>
-          )}
-
-          {/* Menu Button */}
-          <button
-            onClick={() => setIsMenuOpen(true)}
-            className="p-1.5 sm:p-2 bg-black/70 backdrop-blur-md hover:bg-white/10 rounded-xl border border-[#d4af37]/40 text-[#d4af37] transition cursor-pointer"
-            title="Menu Principal"
-          >
-            <Menu className="w-4 h-4 sm:w-5 sm:h-5" />
-          </button>
-
-          {/* Admin Quick Trigger */}
-          <button
-            onClick={() => setIsAdminOpen(true)}
-            className="p-1.5 sm:p-2 bg-red-950/80 backdrop-blur-md hover:bg-red-900 rounded-xl border border-red-500/50 text-red-300 transition cursor-pointer"
-            title="Painel de Administração"
-          >
-            <ShieldAlert className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" />
-          </button>
-        </div>
-
-        {/* Slot Machine Area - Positioned according to Admin Configuration */}
-        {adminConfig.slotVisible !== false && (
-          <div 
-            style={{
-              top: `${adminConfig.slotTop ?? 28}%`,
-              left: `${adminConfig.slotLeft ?? 5}%`,
-              width: `${adminConfig.slotWidth ?? 90}%`,
-              height: `${adminConfig.slotHeight ?? 48}%`,
-              transform: `rotate(${adminConfig.slotRotation || 0}deg)`,
-              transformOrigin: 'center center',
-              opacity: (adminConfig.slotOpacity ?? 100) / 100,
-              zIndex: adminConfig.slotZIndex ?? 10,
-            }}
-            className="absolute flex items-center justify-center transition-all duration-100"
-          >
-            <SlotMachine 
-              isSpinning={gameState.isSpinning} 
-              grid={grid} 
-              customSymbols={adminConfig.customSymbols}
-              customSymbolConfigs={adminConfig.customSymbolConfigs}
-              showReelBorders={adminConfig.showReelBorders}
-              showReelBg={adminConfig.showReelBg}
-              individualReelPositions={adminConfig.individualReelPositions}
-              spinStyle={adminConfig.spinStyle}
-              paylines={adminConfig.paylines}
-              numReels={adminConfig.numReels}
-              numRows={adminConfig.numRows}
-            />
-          </div>
-        )}
-        
-        {/* Spin Button Area - Positioned according to Admin Configuration */}
-        {adminConfig.spinVisible !== false && (
-          <div 
-            style={{
-              bottom: adminConfig.spinTop === undefined ? `${adminConfig.spinBottom ?? 4}%` : undefined,
-              top: adminConfig.spinTop !== undefined ? `${adminConfig.spinTop}%` : undefined,
-              left: `${adminConfig.spinLeft ?? 50}%`,
-              transform: `translateX(-50%) scale(${(adminConfig.spinScale ?? 100) / 100}) rotate(${adminConfig.spinRotation || 0}deg)`,
-              transformOrigin: 'center center',
-              opacity: (adminConfig.spinOpacity ?? 100) / 100,
-              zIndex: adminConfig.spinZIndex ?? 20,
-            }}
-            className="absolute transition-all duration-100"
-          >
-            <SpinButton onSpin={handleSpin} isSpinning={gameState.isSpinning} />
-          </div>
-        )}
-
       </div>
 
       {/* GAME MENU MODAL */}

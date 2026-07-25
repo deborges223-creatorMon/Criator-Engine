@@ -5,11 +5,12 @@ import {
   RotateCcw, Sliders, Eye, Coins, Minus, Plus, Cpu, Layers, Gift, FileText, Check, PlusCircle, Settings, Palette, Play,
   Lock, Unlock, Grid, Maximize2, EyeOff, Crosshair
 } from 'lucide-react';
-import { AdminConfig, GameState, SymbolType, Payline, BonusConfig, ReelPosition } from '../types';
+import { AdminConfig, GameState, SymbolType, Payline, BonusConfig, ReelPosition, AnchorType } from '../types';
 import { SlotSymbol } from './SlotSymbol';
 import { SlotMachine } from './SlotMachine';
 import { BackgroundMedia } from './BackgroundMedia';
 import { SpinButton } from './SpinButton';
+import { GameStage } from './GameStage';
 
 interface AdminPanelModalProps {
   isOpen: boolean;
@@ -1407,225 +1408,45 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                   {/* Main Inspector Grid Layout: Left Canvas Stage Preview, Right Numeric Inspector */}
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
                     
-                    {/* LEFT COLUMN: 100% Faithful 9:16 Canvas Stage Preview */}
+                    {/* LEFT COLUMN: 100% Faithful Virtual Canvas Stage Preview */}
                     <div className="lg:col-span-5 flex flex-col items-center space-y-2">
                       <div className="text-xs font-bold text-gray-300 flex items-center justify-between w-full max-w-[340px] px-1">
                         <span className="flex items-center gap-1">
                           <Maximize2 className="w-3.5 h-3.5 text-amber-400" />
-                          <span>Tela do Jogo (Modo 9:16 Mobile)</span>
+                          <span>Pré-visualização do Canvas Base</span>
                         </span>
-                        <span className="text-[10px] text-amber-400 font-mono">100% Fidelidade Real</span>
+                        <span className="text-[10px] text-amber-400 font-mono">100% Idêntico ao Jogo</span>
                       </div>
 
-                      {/* 9:16 Mobile Canvas Container */}
-                      <div
-                        ref={previewCanvasRef}
-                        onMouseDown={handleBgMouseDown}
-                        onMouseMove={handleMouseMove}
-                        onMouseUp={handleMouseUp}
-                        onMouseLeave={handleMouseUp}
-                        className={`relative w-full aspect-[9/16] max-w-[340px] mx-auto rounded-2xl bg-black overflow-hidden select-none shadow-[0_0_35px_rgba(0,0,0,0.9)] border-2 transition-all ${
-                          selectedElement === 'bg' ? 'border-amber-400 ring-2 ring-amber-400/40' : 'border-amber-500/40'
-                        }`}
-                      >
-                        {/* Live Background Media (Photo or Video with Fit & Anchor support) */}
-                        <BackgroundMedia
-                          src={adminConfig.bgImage}
-                          posX={adminConfig.bgPosX}
-                          posY={adminConfig.bgPosY}
-                          zoom={adminConfig.bgZoom}
-                          fit={adminConfig.bgFit}
-                          anchor={adminConfig.bgAnchor}
+                      {/* Canvas Container */}
+                      <div className="relative w-full aspect-[9/16] max-w-[340px] mx-auto rounded-2xl bg-black overflow-hidden select-none shadow-[0_0_35px_rgba(0,0,0,0.9)] border-2 border-amber-500/40">
+                        <GameStage 
+                          adminConfig={adminConfig}
+                          gameState={gameState}
+                          grid={[
+                            ['Castle', 'Sword', 'Diamond', 'Crown', 'Lion'],
+                            ['Shield', 'Queen', 'Dragon', 'King', 'Coin'],
+                            ['Lion', 'Diamond', 'Castle', 'Sword', 'Crown'],
+                            ['Dragon', 'Castle', 'Shield', 'Queen', 'King'],
+                            ['Sword', 'Coin', 'Lion', 'Diamond', 'Crown'],
+                            ['Crown', 'Dragon', 'King', 'Shield', 'Castle'],
+                          ].slice(0, numReels).map(col => col.slice(0, numRows))}
+                          onSpin={() => {
+                            setTestSpinning(true);
+                            setTimeout(() => setTestSpinning(false), 2000);
+                          }}
+                          onBetChange={() => {}}
+                          onOpenMenu={() => {}}
+                          onOpenAdmin={() => {}}
+                          isEditing={true}
+                          selectedElement={selectedElement}
+                          onSelectElement={setSelectedElement}
+                          onUpdateAdminConfig={onUpdateAdminConfig}
                         />
-
-                        {/* Grid Pattern Overlay */}
-                        {adminConfig.gridEnabled && (
-                          <div 
-                            className="absolute inset-0 pointer-events-none z-10 opacity-30" 
-                            style={{
-                              backgroundImage: `linear-gradient(to right, rgba(255, 255, 255, 0.25) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.25) 1px, transparent 1px)`,
-                              backgroundSize: `${adminConfig.gridSize || 2}% ${adminConfig.gridSize || 2}%`
-                            }}
-                          />
-                        )}
-
-                        {/* Balance Box Element */}
-                        {adminConfig.balanceVisible !== false && (
-                          <div
-                            onMouseDown={handleBalanceMouseDown}
-                            style={{
-                              top: `${adminConfig.balanceTop ?? 3}%`,
-                              left: `${adminConfig.balanceLeft ?? 3}%`,
-                              transform: `scale(${(adminConfig.balanceScale ?? 100) / 100}) rotate(${adminConfig.balanceRotation || 0}deg)`,
-                              transformOrigin: 'top left',
-                              opacity: (adminConfig.balanceOpacity ?? 100) / 100,
-                              zIndex: adminConfig.balanceZIndex ?? 30,
-                              backgroundColor: adminConfig.balanceBgColor || 'rgba(0,0,0,0.8)',
-                              borderColor: adminConfig.balanceBorderColor || 'rgba(212,175,55,0.6)',
-                            }}
-                            className={`absolute cursor-move backdrop-blur-md px-2.5 py-1 rounded-xl border-2 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-lg transition-shadow ${
-                              selectedElement === 'balance' ? 'ring-2 ring-yellow-400 border-yellow-300 shadow-[0_0_20px_rgba(250,204,21,0.8)]' : ''
-                            }`}
-                          >
-                            <Coins className="w-3.5 h-3.5 text-yellow-400" />
-                            <div className="flex flex-col">
-                              <span className="text-[8px] text-gray-300 uppercase font-bold flex items-center justify-between gap-1">
-                                <span>Saldo</span>
-                                {selectedElement === 'balance' && <span className="text-yellow-300 font-mono text-[7px]">(X:{adminConfig.balanceLeft}%, Y:{adminConfig.balanceTop}%)</span>}
-                              </span>
-                              <span 
-                                style={{ color: adminConfig.balanceTextColor || '#ffffff' }}
-                                className="text-xs font-black whitespace-nowrap"
-                              >
-                                R$ {gameState.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                              </span>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Bet Box Element */}
-                        {adminConfig.betVisible !== false && (
-                          <div
-                            onMouseDown={handleBetMouseDown}
-                            style={{
-                              top: `${adminConfig.betTop ?? 3}%`,
-                              left: `${adminConfig.betLeft ?? 55}%`,
-                              transform: `scale(${(adminConfig.betScale ?? 100) / 100}) rotate(${adminConfig.betRotation || 0}deg)`,
-                              transformOrigin: 'top left',
-                              opacity: (adminConfig.betOpacity ?? 100) / 100,
-                              zIndex: adminConfig.betZIndex ?? 30,
-                              backgroundColor: adminConfig.betBgColor || 'rgba(0,0,0,0.8)',
-                              borderColor: adminConfig.betBorderColor || 'rgba(139,105,20,0.6)',
-                            }}
-                            className={`absolute cursor-move backdrop-blur-md px-2 py-1 rounded-xl border-2 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-lg transition-shadow ${
-                              selectedElement === 'bet' ? 'ring-2 ring-amber-400 border-amber-300 shadow-[0_0_20px_rgba(245,158,11,0.8)]' : ''
-                            }`}
-                          >
-                            <div className="flex items-center gap-1">
-                              <div className="w-4 h-4 rounded bg-white/10 flex items-center justify-center text-white">
-                                <Minus className="w-2.5 h-2.5" />
-                              </div>
-                              <div className="flex flex-col items-center px-1">
-                                <span className="text-[8px] text-amber-400 uppercase font-black tracking-wider flex items-center gap-1">
-                                  <span>Aposta</span>
-                                  {selectedElement === 'bet' && <span className="text-amber-300 font-mono text-[7px]">(X:{adminConfig.betLeft}%)</span>}
-                                </span>
-                                <span 
-                                  style={{ color: adminConfig.betTextColor || '#fde073' }}
-                                  className="text-xs font-black whitespace-nowrap"
-                                >
-                                  R$ {gameState.bet.toFixed(2)}
-                                </span>
-                              </div>
-                              <div className="w-4 h-4 rounded bg-white/10 flex items-center justify-center text-white">
-                                <Plus className="w-2.5 h-2.5" />
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Slot Machine Area Element */}
-                        {adminConfig.slotVisible !== false && (
-                          <div
-                            onMouseDown={handleSlotMouseDown}
-                            style={{
-                              top: `${adminConfig.slotTop ?? 28}%`,
-                              left: `${adminConfig.slotLeft ?? 5}%`,
-                              width: `${adminConfig.slotWidth ?? 90}%`,
-                              height: `${adminConfig.slotHeight ?? 48}%`,
-                              transform: `scale(${(adminConfig.slotScale ?? 100) / 100}) rotate(${adminConfig.slotRotation || 0}deg)`,
-                              opacity: (adminConfig.slotOpacity ?? 100) / 100,
-                              zIndex: adminConfig.slotZIndex ?? 10,
-                            }}
-                            className={`absolute border-2 rounded-xl flex flex-col items-center justify-center cursor-move transition-all ${
-                              selectedElement === 'slot'
-                                ? 'border-amber-400 bg-amber-500/10 shadow-[0_0_25px_rgba(245,158,11,0.5)] ring-2 ring-amber-300'
-                                : 'border-amber-400/50 bg-black/20 hover:border-amber-300'
-                            }`}
-                          >
-                            {/* Selected Badge Header */}
-                            <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-amber-400 text-black px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider shadow pointer-events-none z-30 whitespace-nowrap flex items-center gap-1">
-                              <span>Slot Machine</span>
-                              <span className="font-mono text-[7px] text-black/70">({adminConfig.slotWidth}%x{adminConfig.slotHeight}%)</span>
-                            </div>
-
-                            {/* Individual Reel Drag Badges */}
-                            <div className="absolute top-1 left-0 right-0 z-40 flex justify-around px-1 pointer-events-auto">
-                              {Array.from({ length: numReels }).map((_, rIdx) => (
-                                <button
-                                  key={rIdx}
-                                  type="button"
-                                  onMouseDown={(e) => handleReelMouseDown(rIdx, e)}
-                                  className="px-1.5 py-0.5 rounded bg-amber-500 hover:bg-yellow-300 text-black text-[9px] font-black shadow border border-black cursor-grab active:cursor-grabbing"
-                                  title={`Arraste o Slot R${rIdx + 1} individualmente`}
-                                >
-                                  R{rIdx + 1}
-                                </button>
-                              ))}
-                            </div>
-
-                            {/* Real SlotMachine rendered inside preview */}
-                            <div className="w-full h-full pointer-events-none flex items-center justify-center p-1">
-                              <SlotMachine 
-                                isSpinning={testSpinning} 
-                                grid={[
-                                  ['Castle', 'Sword', 'Diamond', 'Crown', 'Lion'],
-                                  ['Shield', 'Queen', 'Dragon', 'King', 'Coin'],
-                                  ['Lion', 'Diamond', 'Castle', 'Sword', 'Crown'],
-                                  ['Dragon', 'Castle', 'Shield', 'Queen', 'King'],
-                                  ['Sword', 'Coin', 'Lion', 'Diamond', 'Crown'],
-                                  ['Crown', 'Dragon', 'King', 'Shield', 'Castle'],
-                                ].slice(0, numReels).map(col => col.slice(0, numRows))} 
-                                customSymbols={adminConfig.customSymbols}
-                                customSymbolConfigs={adminConfig.customSymbolConfigs}
-                                showReelBorders={adminConfig.showReelBorders}
-                                showReelBg={adminConfig.showReelBg}
-                                individualReelPositions={adminConfig.individualReelPositions}
-                                spinStyle={adminConfig.spinStyle}
-                                paylines={adminConfig.paylines}
-                                numReels={numReels}
-                                numRows={numRows}
-                              />
-                            </div>
-
-                            {/* Bottom-Right Resize Handle */}
-                            <div
-                              onMouseDown={handleSlotResizeMouseDown}
-                              className="absolute -bottom-2 -right-2 w-5 h-5 bg-amber-400 hover:bg-yellow-200 border border-black rounded-full cursor-se-resize shadow-lg flex items-center justify-center z-30"
-                              title="Arraste para Redimensionar o Slot"
-                            >
-                              <div className="w-2 h-2 border-r-2 border-b-2 border-black" />
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Spin Button Element */}
-                        {adminConfig.spinVisible !== false && (
-                          <div
-                            onMouseDown={handleSpinMouseDown}
-                            style={{
-                              bottom: `${adminConfig.spinBottom ?? 4}%`,
-                              left: `${adminConfig.spinLeft ?? 50}%`,
-                              transform: `translateX(-50%) scale(${(adminConfig.spinScale ?? 100) / 100}) rotate(${adminConfig.spinRotation || 0}deg)`,
-                              opacity: (adminConfig.spinOpacity ?? 100) / 100,
-                              zIndex: adminConfig.spinZIndex ?? 20,
-                            }}
-                            className={`absolute cursor-move transition-all ${
-                              selectedElement === 'spin'
-                                ? 'ring-4 ring-red-400 ring-offset-2 ring-offset-black rounded-full shadow-[0_0_25px_rgba(239,68,68,0.8)] scale-105'
-                                : ''
-                            }`}
-                          >
-                            <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-red-600 text-white px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider shadow whitespace-nowrap pointer-events-none">
-                              Botão Girar
-                            </div>
-                            <SpinButton onSpin={() => {}} isSpinning={testSpinning} />
-                          </div>
-                        )}
                       </div>
 
                       <p className="text-[10px] text-gray-400 text-center italic">
-                        Dica: Clique em qualquer elemento na tela para selecioná-lo e abrir suas propriedades no painel ao lado.
+                        Dica: Selecione qualquer elemento para editar posição, tamanho e âncora no painel ao lado.
                       </p>
                     </div>
 
