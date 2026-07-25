@@ -158,6 +158,7 @@ export interface AdminConfig {
   gridEnabled?: boolean;
   gridSize?: number; // 1, 2, 5, 10 (%)
   snapToGrid?: boolean;
+  showMetrics?: boolean; // Toggles screen metrics and precise measurement rulers
   editorZoom?: number; // 50% to 150%
 
   // Reel Frame & Border options

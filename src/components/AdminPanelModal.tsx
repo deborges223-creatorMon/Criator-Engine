@@ -3,7 +3,7 @@ import {
   Shield, X, DollarSign, Activity, Percent, Flame, RefreshCw, Key, 
   AlertTriangle, Image as ImageIcon, Move, LayoutGrid, Upload, Trash2, 
   RotateCcw, Sliders, Eye, Coins, Minus, Plus, Cpu, Layers, Gift, FileText, Check, PlusCircle, Settings, Palette, Play,
-  Lock, Unlock, Grid, Maximize2, EyeOff, Crosshair
+  Lock, Unlock, Grid, Maximize2, EyeOff, Crosshair, Ruler
 } from 'lucide-react';
 import { AdminConfig, GameState, SymbolType, Payline, BonusConfig, ReelPosition, AnchorType } from '../types';
 import { SlotSymbol } from './SlotSymbol';
@@ -1363,6 +1363,21 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                         <span>Gradil ({adminConfig.gridEnabled ? 'ON' : 'OFF'})</span>
                       </button>
 
+                      {/* Screen Metrics Toggle */}
+                      <button
+                        type="button"
+                        onClick={() => onUpdateAdminConfig({ showMetrics: !adminConfig.showMetrics })}
+                        className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 border transition cursor-pointer ${
+                          adminConfig.showMetrics
+                            ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-[0_0_12px_rgba(6,182,212,0.3)] font-black'
+                            : 'bg-black/40 text-gray-400 border-white/10'
+                        }`}
+                        title="Ativar métricas visuais e réguas de medida da tela"
+                      >
+                        <Ruler className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>Métricas 100% ({adminConfig.showMetrics ? 'Ativas' : 'Off'})</span>
+                      </button>
+
                       {/* Snap to Grid Toggle */}
                       <button
                         type="button"
@@ -1432,7 +1447,19 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                           <Maximize2 className="w-3.5 h-3.5 text-amber-400" />
                           <span>Pré-visualização do Canvas Base</span>
                         </span>
-                        <span className="text-[10px] text-amber-400 font-mono">100% Idêntico ao Jogo</span>
+                        <button
+                          type="button"
+                          onClick={() => onUpdateAdminConfig({ showMetrics: !adminConfig.showMetrics })}
+                          className={`text-[10px] px-2 py-0.5 rounded-md font-mono font-bold flex items-center gap-1 border transition cursor-pointer ${
+                            adminConfig.showMetrics
+                              ? 'bg-cyan-400 text-black border-cyan-300 font-extrabold shadow-[0_0_8px_rgba(6,182,212,0.6)]'
+                              : 'bg-black/60 text-cyan-400 border-cyan-500/40 hover:bg-cyan-950'
+                          }`}
+                          title="Ativar/Desativar réguas e métricas da tela"
+                        >
+                          <Ruler className="w-3 h-3" />
+                          <span>{adminConfig.showMetrics ? '📏 Métricas ON' : '📏 Métricas OFF'}</span>
+                        </button>
                       </div>
 
                       {/* Canvas Container */}

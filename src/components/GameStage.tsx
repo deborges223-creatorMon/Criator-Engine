@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Menu, ShieldAlert, Plus, Minus, Coins, Move, Lock, Eye, EyeOff, RotateCw, Scaling, Anchor, Trophy } from 'lucide-react';
+import { Menu, ShieldAlert, Plus, Minus, Coins, Move, Lock, Eye, EyeOff, RotateCw, Scaling, Anchor, Trophy, Ruler, Crosshair, Activity } from 'lucide-react';
 import { SlotMachine } from './SlotMachine';
 import { SpinButton } from './SpinButton';
 import { BackgroundMedia } from './BackgroundMedia';
@@ -456,6 +456,193 @@ export const GameStage: React.FC<GameStageProps> = ({
               }} 
               isSpinning={gameState.isSpinning} 
             />
+          </div>
+        )}
+
+        {/* Quick Stage Metrics Toggle Button */}
+        {isEditing && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onUpdateAdminConfig) {
+                onUpdateAdminConfig({ showMetrics: !adminConfig.showMetrics });
+              }
+            }}
+            className={`absolute top-3 right-3 z-[100] px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold flex items-center gap-1.5 border shadow-xl transition cursor-pointer ${
+              adminConfig.showMetrics
+                ? 'bg-cyan-400 text-black border-cyan-300 font-extrabold shadow-[0_0_15px_rgba(6,182,212,0.8)]'
+                : 'bg-black/80 text-cyan-400 border-cyan-500/50 hover:bg-cyan-950'
+            }`}
+            title="Ativar/Desativar réguas e métricas de medida da tela"
+          >
+            <Ruler className="w-3.5 h-3.5 text-current" />
+            <span>{adminConfig.showMetrics ? '📏 Métricas 100% ON' : '📏 Medidas OFF'}</span>
+          </button>
+        )}
+
+        {/* 100% FAITHFUL SCREEN METRICS & RULERS OVERLAY LAYER */}
+        {adminConfig.showMetrics && (
+          <div className="absolute inset-0 pointer-events-none z-[80]">
+            {/* 1. HUD Resolution Banner */}
+            <div className="absolute top-10 left-1/2 -translate-x-1/2 z-[95] bg-slate-950/95 border-2 border-cyan-400 text-cyan-300 px-3.5 py-1.5 rounded-full font-mono text-[10px] sm:text-xs font-black shadow-[0_0_20px_rgba(6,182,212,0.6)] flex items-center gap-2.5 backdrop-blur-md">
+              <Ruler className="w-4 h-4 text-cyan-400 animate-pulse shrink-0" />
+              <span>Canvas Base: <strong className="text-white">{VIRTUAL_WIDTH}×{VIRTUAL_HEIGHT}px</strong></span>
+              <span className="text-cyan-500">|</span>
+              <span>Tela Real: <strong className="text-white">{Math.round(stageSize.width)}×{Math.round(stageSize.height)}px</strong></span>
+              <span className="text-cyan-500">|</span>
+              <span>Escala: <strong className="text-amber-400">{(scale || 1).toFixed(3)}x</strong></span>
+            </div>
+
+            {/* 2. Top Horizontal Ruler (X Axis) */}
+            <div className="absolute top-0 left-0 right-0 h-8 bg-black/90 text-cyan-300 border-b-2 border-cyan-400/80 font-mono text-[9px] flex justify-between items-end px-2 pb-0.5">
+              {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((pct) => {
+                const pxVal = Math.round((pct / 100) * VIRTUAL_WIDTH);
+                return (
+                  <div key={pct} className="flex flex-col items-center relative" style={{ left: `${pct}%`, position: pct === 0 || pct === 100 ? 'relative' : 'absolute', transform: pct > 0 && pct < 100 ? 'translateX(-50%)' : 'none' }}>
+                    <span className="text-[8px] font-black text-cyan-300">{pct}%</span>
+                    <span className="text-[7px] text-gray-400 leading-none">{pxVal}px</span>
+                    <div className="w-[1px] h-2 bg-cyan-400 mt-0.5" />
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* 3. Left Vertical Ruler (Y Axis) */}
+            <div className="absolute top-0 left-0 bottom-0 w-10 bg-black/90 text-cyan-300 border-r-2 border-cyan-400/80 font-mono text-[9px] flex flex-col justify-between py-2 pl-0.5">
+              {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((pct) => {
+                const pxVal = Math.round((pct / 100) * VIRTUAL_HEIGHT);
+                return (
+                  <div key={pct} className="flex items-center gap-1 relative" style={{ top: `${pct}%`, position: pct === 0 || pct === 100 ? 'relative' : 'absolute', transform: pct > 0 && pct < 100 ? 'translateY(-50%)' : 'none' }}>
+                    <div className="h-[1px] w-2 bg-cyan-400" />
+                    <div className="flex flex-col leading-tight">
+                      <span className="text-[8px] font-black text-cyan-300">{pct}%</span>
+                      <span className="text-[7px] text-gray-400">{pxVal}px</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* 4. Center Crosshairs (50% X and 50% Y) */}
+            <div className="absolute top-0 bottom-0 left-[50%] w-[1px] bg-cyan-400/60 border-l border-dashed border-cyan-300">
+              <span className="absolute top-12 left-1 bg-cyan-950/90 border border-cyan-400 text-cyan-200 px-1.5 py-0.5 rounded font-mono text-[8px] font-bold">
+                Centro X: 50% ({Math.round(0.5 * VIRTUAL_WIDTH)}px)
+              </span>
+            </div>
+            <div className="absolute left-0 right-0 top-[50%] h-[1px] bg-cyan-400/60 border-t border-dashed border-cyan-300">
+              <span className="absolute left-12 top-1 bg-cyan-950/90 border border-cyan-400 text-cyan-200 px-1.5 py-0.5 rounded font-mono text-[8px] font-bold">
+                Centro Y: 50% ({Math.round(0.5 * VIRTUAL_HEIGHT)}px)
+              </span>
+            </div>
+
+            {/* 5. Precise Element Measurement Badges & Bounding Outlines */}
+
+            {/* Slot Machine Metric Badge */}
+            {adminConfig.slotVisible !== false && (
+              <div 
+                style={{
+                  top: `${adminConfig.slotTop ?? 28}%`,
+                  left: `${adminConfig.slotLeft ?? 5}%`,
+                  width: `${adminConfig.slotWidth ?? 90}%`,
+                  height: `${adminConfig.slotHeight ?? 48}%`,
+                }}
+                className={`absolute border-2 border-dashed ${selectedElement === 'slot' ? 'border-amber-400 bg-amber-500/10 shadow-[0_0_15px_rgba(251,191,36,0.4)]' : 'border-cyan-400/80 bg-cyan-950/20'} rounded-xl transition-all pointer-events-none`}
+              >
+                <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-black/90 border border-cyan-400 text-cyan-300 px-2 py-0.5 rounded font-mono text-[9px] font-bold whitespace-nowrap shadow-lg flex items-center gap-1.5">
+                  <span className="text-amber-400 font-extrabold">🎰 SLOT</span>
+                  <span>X: {(adminConfig.slotLeft ?? 5)}% ({Math.round((adminConfig.slotLeft ?? 5) * VIRTUAL_WIDTH / 100)}px)</span>
+                  <span>Y: {(adminConfig.slotTop ?? 28)}% ({Math.round((adminConfig.slotTop ?? 28) * VIRTUAL_HEIGHT / 100)}px)</span>
+                  <span>W: {(adminConfig.slotWidth ?? 90)}% ({Math.round((adminConfig.slotWidth ?? 90) * VIRTUAL_WIDTH / 100)}px)</span>
+                  <span>H: {(adminConfig.slotHeight ?? 48)}% ({Math.round((adminConfig.slotHeight ?? 48) * VIRTUAL_HEIGHT / 100)}px)</span>
+                </div>
+              </div>
+            )}
+
+            {/* Balance Metric Badge */}
+            {adminConfig.balanceVisible !== false && (
+              <div 
+                style={{
+                  top: `${adminConfig.balanceTop ?? 3}%`,
+                  left: `${adminConfig.balanceLeft ?? 3}%`,
+                }}
+                className={`absolute border-2 border-dashed ${selectedElement === 'balance' ? 'border-amber-400 bg-amber-500/10 shadow-[0_0_15px_rgba(251,191,36,0.4)]' : 'border-cyan-400/80 bg-cyan-950/20'} rounded-xl transition-all pointer-events-none p-1`}
+              >
+                <div className="absolute -bottom-6 left-0 bg-black/90 border border-cyan-400 text-cyan-300 px-2 py-0.5 rounded font-mono text-[9px] font-bold whitespace-nowrap shadow-lg flex items-center gap-1.5">
+                  <span className="text-yellow-400 font-extrabold">💰 SALDO</span>
+                  <span>X: {(adminConfig.balanceLeft ?? 3)}% ({Math.round((adminConfig.balanceLeft ?? 3) * VIRTUAL_WIDTH / 100)}px)</span>
+                  <span>Y: {(adminConfig.balanceTop ?? 3)}% ({Math.round((adminConfig.balanceTop ?? 3) * VIRTUAL_HEIGHT / 100)}px)</span>
+                </div>
+              </div>
+            )}
+
+            {/* Bet Metric Badge */}
+            {adminConfig.betVisible !== false && (
+              <div 
+                style={{
+                  top: `${adminConfig.betTop ?? 3}%`,
+                  left: `${adminConfig.betLeft ?? 55}%`,
+                }}
+                className={`absolute border-2 border-dashed ${selectedElement === 'bet' ? 'border-amber-400 bg-amber-500/10 shadow-[0_0_15px_rgba(251,191,36,0.4)]' : 'border-cyan-400/80 bg-cyan-950/20'} rounded-xl transition-all pointer-events-none p-1`}
+              >
+                <div className="absolute -bottom-6 left-0 bg-black/90 border border-cyan-400 text-cyan-300 px-2 py-0.5 rounded font-mono text-[9px] font-bold whitespace-nowrap shadow-lg flex items-center gap-1.5">
+                  <span className="text-amber-300 font-extrabold">💵 APOSTA</span>
+                  <span>X: {(adminConfig.betLeft ?? 55)}% ({Math.round((adminConfig.betLeft ?? 55) * VIRTUAL_WIDTH / 100)}px)</span>
+                  <span>Y: {(adminConfig.betTop ?? 3)}% ({Math.round((adminConfig.betTop ?? 3) * VIRTUAL_HEIGHT / 100)}px)</span>
+                </div>
+              </div>
+            )}
+
+            {/* Win Box (Fixed) Metric Badge */}
+            {adminConfig.winBoxVisible !== false && (
+              <div 
+                style={{
+                  top: `${adminConfig.winBoxTop ?? 3}%`,
+                  left: `${adminConfig.winBoxLeft ?? 30}%`,
+                }}
+                className={`absolute border-2 border-dashed ${selectedElement === 'winBox' ? 'border-amber-400 bg-amber-500/10 shadow-[0_0_15px_rgba(251,191,36,0.4)]' : 'border-emerald-400/80 bg-emerald-950/20'} rounded-xl transition-all pointer-events-none p-1`}
+              >
+                <div className="absolute -bottom-6 left-0 bg-black/90 border border-emerald-400 text-emerald-300 px-2 py-0.5 rounded font-mono text-[9px] font-bold whitespace-nowrap shadow-lg flex items-center gap-1.5">
+                  <span className="text-emerald-400 font-extrabold">🏆 GANHO FIXO</span>
+                  <span>X: {(adminConfig.winBoxLeft ?? 30)}% ({Math.round((adminConfig.winBoxLeft ?? 30) * VIRTUAL_WIDTH / 100)}px)</span>
+                  <span>Y: {(adminConfig.winBoxTop ?? 3)}% ({Math.round((adminConfig.winBoxTop ?? 3) * VIRTUAL_HEIGHT / 100)}px)</span>
+                </div>
+              </div>
+            )}
+
+            {/* Win Overlay Metric Badge */}
+            {adminConfig.winOverlayVisible !== false && (
+              <div 
+                style={{
+                  top: `${adminConfig.winOverlayTop ?? 20}%`,
+                  left: `${adminConfig.winOverlayLeft ?? 50}%`,
+                }}
+                className={`absolute border-2 border-dashed ${selectedElement === 'winOverlay' ? 'border-amber-400 bg-amber-500/10 shadow-[0_0_15px_rgba(251,191,36,0.4)]' : 'border-amber-400/80 bg-amber-950/20'} rounded-xl transition-all pointer-events-none p-1`}
+              >
+                <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-black/90 border border-amber-400 text-amber-300 px-2 py-0.5 rounded font-mono text-[9px] font-bold whitespace-nowrap shadow-lg flex items-center gap-1.5">
+                  <span className="text-amber-400 font-extrabold">🎉 OVERLAY GANHO</span>
+                  <span>X: {(adminConfig.winOverlayLeft ?? 50)}% ({Math.round((adminConfig.winOverlayLeft ?? 50) * VIRTUAL_WIDTH / 100)}px)</span>
+                  <span>Y: {(adminConfig.winOverlayTop ?? 20)}% ({Math.round((adminConfig.winOverlayTop ?? 20) * VIRTUAL_HEIGHT / 100)}px)</span>
+                </div>
+              </div>
+            )}
+
+            {/* Spin Button Metric Badge */}
+            {adminConfig.spinVisible !== false && (
+              <div 
+                style={{
+                  top: `${adminConfig.spinTop ?? 88}%`,
+                  left: `${adminConfig.spinLeft ?? 50}%`,
+                }}
+                className={`absolute border-2 border-dashed ${selectedElement === 'spin' ? 'border-amber-400 bg-amber-500/10 shadow-[0_0_15px_rgba(251,191,36,0.4)]' : 'border-red-400/80 bg-red-950/20'} rounded-full transition-all pointer-events-none p-1`}
+              >
+                <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-black/90 border border-red-400 text-red-300 px-2 py-0.5 rounded font-mono text-[9px] font-bold whitespace-nowrap shadow-lg flex items-center gap-1.5">
+                  <span className="text-red-400 font-extrabold">🎯 GIRAR</span>
+                  <span>X: {(adminConfig.spinLeft ?? 50)}% ({Math.round((adminConfig.spinLeft ?? 50) * VIRTUAL_WIDTH / 100)}px)</span>
+                  <span>Y: {(adminConfig.spinTop ?? 88)}% ({Math.round((adminConfig.spinTop ?? 88) * VIRTUAL_HEIGHT / 100)}px)</span>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
