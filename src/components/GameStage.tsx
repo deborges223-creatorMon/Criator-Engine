@@ -335,8 +335,8 @@ export const GameStage: React.FC<GameStageProps> = ({
           </div>
         )}
 
-        {/* Persistent Win Indicator Banner Badge (Quadro de Ganho 1) */}
-        {adminConfig.winBoxVisible !== false && (
+        {/* Persistent Win Indicator Banner Badge (Quadro de Ganho 1 - Normal Win) */}
+        {((!gameState.isSpinning && gameState.win > 0 && !gameState.bigWin) || (isEditing && selectedElement === 'winBox')) && adminConfig.winBoxVisible !== false && (
           <div 
             style={{
               ...winBoxStyle,
@@ -358,14 +358,14 @@ export const GameStage: React.FC<GameStageProps> = ({
                 style={{ color: adminConfig.winBoxTextColor || '#34d399' }}
                 className="text-2xl font-black"
               >
-                R$ {gameState.win.toFixed(2)}
+                R$ {(gameState.win > 0 ? gameState.win : 25.00).toFixed(2)}
               </span>
             </div>
           </div>
         )}
 
-        {/* Animated Big Win Counter Overlay (Quadro de Ganho 2) */}
-        {(gameState.win > 0 || (isEditing && selectedElement === 'winOverlay')) && adminConfig.winOverlayVisible !== false && (
+        {/* Animated Big Win Counter Overlay (Quadro de Ganho 2 - Grande Ganho) */}
+        {((!gameState.isSpinning && gameState.win > 0 && gameState.bigWin) || (isEditing && selectedElement === 'winOverlay')) && adminConfig.winOverlayVisible !== false && (
           <div
             style={winOverlayStyle}
             onMouseDown={(e) => handleMouseDown(e, 'winOverlay', adminConfig.winOverlayLeft ?? 50, adminConfig.winOverlayTop ?? 20)}
